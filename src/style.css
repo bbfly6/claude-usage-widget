@@ -1,0 +1,881 @@
+/* ===== Reset & Base ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #1a1a1a;
+  --card-bg: #262626;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a8a8a8;
+  --border: #3a3a3a;
+  --claude-orange: #D97757;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
+  --progress-bg: #333333;
+  --glass-bg: #262626;
+  --glass-border: #3a3a3a;
+  --glass-shadow: rgba(0, 0, 0, 0.4);
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --drag-bar: rgba(255, 255, 255, 0.15);
+  --radius: 16px;
+}
+
+html, body {
+  height: 100%;
+  background: transparent;        /* frameless + transparent 윈도우용 */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+#widget {
+  background: var(--glass-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ===== Drag Handle ===== */
+.drag-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+
+.drag-bar {
+  width: 36px;
+  height: 4px;
+  background: var(--drag-bar);
+  border-radius: 2px;
+}
+
+/* ===== Header ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.claude-icon {
+  flex-shrink: 0;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-title {
+  /* 'Claude Usage Widget by R' 이 320px 헤더에서 2줄로 접히므로 크기·자간을 줄여 맞춤 */
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.plan-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.1);
+  border: 1px solid rgba(217, 119, 87, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;   /* 'Max (Extra)' 가 두 줄로 쪼개지던 문제 */
+  flex-shrink: 0;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-icon {
+  font-size: 10px;
+}
+
+.status-icon.connected { color: var(--success); }
+.status-icon.error { color: var(--danger); }
+.status-icon.checking { color: var(--text-secondary); }
+
+.status-text {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.status-text.connected { color: var(--success); }
+.status-text.error { color: var(--danger); }
+
+.settings-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.settings-btn:hover {
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.08);
+}
+
+/* ===== Settings Panel ===== */
+.settings-panel {
+  padding: 0 16px 12px;
+}
+
+.settings-group {
+  margin-bottom: 10px;
+}
+
+.settings-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lang-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.lang-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.lang-btn.active {
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.1);
+  border-color: rgba(217, 119, 87, 0.3);
+  font-weight: 600;
+}
+
+.cred-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cred-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+.cred-dot.found { background: var(--success); }
+.cred-dot.not-found { background: var(--danger); }
+
+.cred-status {
+  font-size: 11px;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.refresh-btn {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.08);
+  border: 1px solid rgba(217, 119, 87, 0.2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.refresh-btn:hover {
+  background: rgba(217, 119, 87, 0.15);
+}
+
+/* ===== Divider ===== */
+.divider {
+  height: 1px;
+  background: var(--hairline);
+  margin: 0;
+}
+
+/* ===== Content ===== */
+.content {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ===== Glass Card ===== */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-percent {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sub-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.sub-percent {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-divider {
+  height: 1px;
+  background: var(--hairline);
+}
+
+.learn-more {
+  font-size: 10px;
+  color: var(--claude-orange);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.learn-more:hover {
+  text-decoration: underline;
+}
+
+/* ===== Progress Bar ===== */
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-bg {
+  height: 20px;
+  background: var(--progress-bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.7), #34d399);
+}
+
+.progress-fill.warning {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.7), #fbbf24);
+}
+
+.progress-fill.danger {
+  background: linear-gradient(90deg, rgba(248, 113, 113, 0.7), #f87171);
+}
+
+.progress-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+
+.reset-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ===== Sync Row ===== */
+.sync-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.sync-buttons {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.sync-btn {
+  font-size: 10px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.sync-btn.active {
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.1);
+  border-color: rgba(217, 119, 87, 0.3);
+  font-weight: 600;
+}
+
+.sync-note {
+  font-size: 9px;
+  color: rgba(168, 168, 168, 0.7);
+  margin-top: -8px;
+}
+
+/* ===== Footer ===== */
+.footer {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+}
+
+.version {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.last-sync {
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex: 1;
+  text-align: right;
+}
+
+.footer-btn {
+  font-size: 10px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.footer-btn.sync { color: var(--claude-orange); }
+.footer-btn.min  { color: var(--text-secondary); font-size: 13px; line-height: 1; padding: 0 4px; }
+.footer-btn.quit { color: var(--danger); font-size: 14px; line-height: 1; padding: 0 4px; }
+.footer-btn:hover { opacity: 0.7; }
+.footer-btn.min:hover { color: var(--text-primary); opacity: 1; }
+.footer-btn.quit:hover { color: #fff; background: var(--danger); border-radius: 4px; opacity: 1; }
+
+.footer-sep {
+  color: var(--border);
+  font-size: 10px;
+}
+
+/* ===== Color helpers ===== */
+.color-success { color: var(--success); }
+.color-warning { color: var(--warning); }
+.color-danger { color: var(--danger); }
+
+/* ===== Scrollbar ===== */
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: 2px;
+}
+
+/* ===== Animation ===== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.syncing { animation: spin 1s linear infinite; display: inline-block; }
+
+/* ===== First-run login ===== */
+.login-card {
+  background: rgba(217, 119, 87, 0.06);
+  border: 1px solid rgba(217, 119, 87, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.login-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.login-btn {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  background: var(--claude-orange);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: opacity 0.12s, transform 0.1s;
+  -webkit-app-region: no-drag;
+}
+
+.login-btn:hover { opacity: 0.88; }
+.login-btn:active { transform: scale(0.985); }
+.login-btn:focus-visible { outline: 2px solid var(--claude-orange); outline-offset: 2px; }
+.login-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+.login-hint {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  min-height: 12px;
+}
+
+/* ===== Light theme ===== */
+:root[data-theme="light"] {
+  --bg: #f7f6f3;
+  --card-bg: #ffffff;
+  --text-primary: #1c1b1a;
+  --text-secondary: #6b6660;
+  --border: #e3dfd8;
+  --progress-bg: #eae7e1;
+  --glass-bg: #ffffff;
+  --glass-border: #e3dfd8;
+  --glass-shadow: rgba(60, 50, 40, 0.12);
+  --danger: #dc2626;
+  --warning: #b45309;
+  --success: #047857;
+  --hairline: rgba(28, 27, 26, 0.08);
+  --hairline-strong: rgba(28, 27, 26, 0.16);
+  --drag-bar: rgba(28, 27, 26, 0.18);
+}
+
+/* ===== Settings: 2단 배치 + 세그먼트 버튼 ===== */
+.settings-row {
+  display: flex;
+  gap: 16px;
+}
+
+.settings-row .settings-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.seg-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.theme-btn,
+.mode-btn,
+.ontop-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  -webkit-app-region: no-drag;
+}
+
+.lang-btn:hover,
+.theme-btn:hover,
+.mode-btn:hover,
+.ontop-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(217, 119, 87, 0.35);
+}
+
+.lang-btn:active,
+.theme-btn:active,
+.mode-btn:active,
+.ontop-btn:active { transform: scale(0.97); }
+
+.lang-btn:focus-visible,
+.theme-btn:focus-visible,
+.mode-btn:focus-visible,
+.ontop-btn:focus-visible {
+  outline: 2px solid var(--claude-orange);
+  outline-offset: 1px;
+}
+
+.theme-btn.active,
+.mode-btn.active,
+.ontop-btn.active {
+  color: var(--claude-orange);
+  background: rgba(217, 119, 87, 0.1);
+  border-color: rgba(217, 119, 87, 0.3);
+  font-weight: 600;
+}
+
+/* ===== Window modes ===== */
+/* 기본 모드: 캐릭터 무대만 숨김 */
+.char-stage { display: none; }
+
+/* 미니 모드: 헤더 + 현재 세션 카드 + 푸터. 주간 카드와 동기화 설정만 뺀다 */
+body.mode-mini #cardWeekly,
+body.mode-mini #syncRow,
+body.mode-mini #syncNote { display: none; }
+
+body.mode-mini .content { padding: 7px 14px; }
+
+/* 드래그 바는 남기되 얇게 (없애면 창을 못 옮김) */
+body.mode-mini .drag-handle { padding: 4px 0 2px; }
+body.mode-mini .drag-bar { height: 3px; }
+
+/* 높이를 80% 로 줄인 만큼 카드도 슬림하게.
+   퍼센트 숫자가 이미 크게 나오므로 눈금은 미니에서만 생략한다. */
+body.mode-mini .glass-card { padding: 11px 12px; gap: 6px; }
+body.mode-mini .progress-scale { display: none; }
+body.mode-mini .header { padding: 7px 14px 7px; }
+body.mode-mini .footer { padding-top: 5px; padding-bottom: 5px; }
+
+/* 캐릭터 모드: 창을 지우고 캐릭터와 말풍선만 남긴다 */
+body.mode-character #cardSession,
+body.mode-character #cardWeekly,
+body.mode-character #syncRow,
+body.mode-character #syncNote,
+body.mode-character .footer,
+body.mode-character .header-left,
+body.mode-character .drag-handle,
+body.mode-character .divider { display: none; }
+
+body.mode-character #widget {
+  background: transparent;
+  border-color: transparent;
+  overflow: visible;
+}
+
+/* 캐릭터 모드는 헤더를 없애고 전용 컨트롤(최소화·설정·종료)을 쓴다.
+   설정 패널을 열었을 때만 헤더를 되살려 패널을 닫을 수 있게 한다. */
+body.mode-character .header { display: none; }
+
+body.mode-character.settings-open .header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px 0;
+}
+
+body.mode-character .content {
+  padding: 0;
+  gap: 0;
+  overflow: visible;
+}
+
+body.mode-character .char-stage { display: flex; }
+
+/* 설정 패널을 열면 읽을 수 있게 배경을 되돌리고 캐릭터는 잠시 치운다 */
+body.settings-open #widget {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+
+body.mode-character.settings-open .char-stage { display: none; }
+body.mode-character.settings-open .drag-handle { display: flex; }
+
+/* 로그인 카드는 어떤 모드에서도 최우선 (인증 없으면 사용량 자체가 없음) */
+body.mode-mini .login-card,
+body.mode-character .login-card { display: flex; }
+
+/* ===== Character stage ===== */
+.char-stage {
+  position: relative;           /* 컨트롤을 우상단에 띄우기 위한 기준 */
+  flex: 1;                      /* 콘텐츠 높이를 채워야 캐릭터가 바닥에 붙고 점프 여유가 생김 */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 0 10px;
+  -webkit-app-region: drag;
+}
+
+.char-bubble {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 4px 12px;
+  box-shadow: 0 2px 10px var(--glass-shadow);
+  animation: bubble-in 0.24s ease-out;
+}
+
+/* 말풍선 꼬리 */
+.char-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -5px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  transform: rotate(45deg);
+}
+
+.char-bubble-percent {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--success);
+}
+
+.char-bubble-percent.warning { color: var(--warning); }
+.char-bubble-percent.danger { color: var(--danger); }
+
+/* 좌우 이동이 일어나는 범위 */
+.char-track {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* 말풍선이 walker 안에 있어야 캐릭터가 걸어갈 때 함께 따라간다.
+   세로 점프는 char-body 에만 걸어 숫자가 흔들리지 않게 분리. */
+.char-walker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  will-change: transform;
+}
+
+.char-body {
+  position: relative;
+  will-change: transform;
+}
+
+.char-svg { display: block; }
+
+/* 구간별로만 켜지는 요소 */
+.char-eyes-shut,
+.char-flame,
+.char-zzz { display: none; }
+
+.char-flame { transform-origin: 50% 100%; }
+
+.char-zzz {
+  position: absolute;
+  top: -2px;
+  right: -14px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.char-zzz span {
+  display: inline-block;
+  animation: zzz-float 2.4s ease-in-out infinite;
+}
+
+.char-zzz span:nth-child(2) { font-size: 12px; animation-delay: 0.8s; }
+.char-zzz span:nth-child(3) { font-size: 14px; animation-delay: 1.6s; }
+
+/* 0~5% — 눈 감고 잠 */
+.char-stage.tier-sleep .char-eyes-shut,
+.char-stage.tier-sleep .char-zzz { display: block; }
+.char-stage.tier-sleep .char-body { animation: char-breathe 3.4s ease-in-out infinite; }
+
+/* 5~30% — 느린 걷기 */
+.char-stage.tier-walk-slow .char-walker { animation: walk-x 6.4s ease-in-out infinite alternate; }
+.char-stage.tier-walk-slow .char-body { animation: step-bob 1.5s ease-in-out infinite; }
+
+/* 30~50% — 빠른 걷기 */
+.char-stage.tier-walk-fast .char-walker { animation: walk-x 2.4s ease-in-out infinite alternate; }
+.char-stage.tier-walk-fast .char-body { animation: step-bob 0.6s ease-in-out infinite; }
+
+/* 50~80% — 위아래 점프 */
+.char-stage.tier-jump .char-body { animation: jump-y 0.52s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+/* 80% 초과 — 불붙어 사방으로 */
+.char-stage.tier-fire .char-flame {
+  display: block;
+  animation: flame-flicker 0.24s steps(2) infinite;
+}
+.char-stage.tier-fire .char-walker { animation: panic-x 0.62s ease-in-out infinite alternate; }
+.char-stage.tier-fire .char-body { animation: jump-y 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+@keyframes walk-x {
+  from { transform: translateX(-46px); }
+  to { transform: translateX(46px); }
+}
+
+@keyframes panic-x {
+  from { transform: translateX(-34px); }
+  to { transform: translateX(34px); }
+}
+
+@keyframes step-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes jump-y {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-20px); }
+}
+
+@keyframes char-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(1px) scaleY(0.97); }
+}
+
+@keyframes zzz-float {
+  0% { opacity: 0; transform: translateY(4px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-13px); }
+}
+
+@keyframes flame-flicker {
+  0% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0.75; transform: scaleY(0.86); }
+}
+
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-walker,
+  .char-body,
+  .char-flame,
+  .char-zzz span,
+  .char-bubble { animation: none !important; }
+}
+
+/* ===== Character mode controls ===== */
+/* 커서가 창 위에 있을 때만 노출. CSS :hover 가 아니라 메인 프로세스의
+   커서 좌표 감시로 body.char-hover 를 토글한다 (드래그 영역이 hover 를 삼킴) */
+.char-controls {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.14s;
+  -webkit-app-region: no-drag;
+}
+
+body.char-hover .char-controls { opacity: 1; }
+
+.char-ctrl {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s, transform 0.1s;
+  -webkit-app-region: no-drag;
+}
+
+.char-ctrl:hover {
+  color: var(--text-primary);
+  border-color: var(--claude-orange);
+}
+
+.char-ctrl:active { transform: scale(0.94); }
+
+.char-ctrl:focus-visible {
+  outline: 2px solid var(--claude-orange);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+.char-ctrl-close:hover {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}

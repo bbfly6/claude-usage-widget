@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Widget</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="widget">
+    <!-- Drag Handle -->
+    <div class="drag-handle">
+      <div class="drag-bar"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <svg class="claude-icon" viewBox="0 0 24 24" width="28" height="28">
+          <path clip-rule="evenodd" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z" fill="#D97757" fill-rule="evenodd"/>
+        </svg>
+        <div class="header-info">
+          <div class="header-title-row">
+            <span class="app-title">Claude Usage Widget by R</span>
+          </div>
+          <div class="status-row" id="statusRow">
+            <span class="status-icon checking">&#8635;</span>
+            <span class="status-text" id="statusText">Checking credentials...</span>
+            <span class="plan-badge" id="planBadge">Max</span>
+          </div>
+        </div>
+      </div>
+      <button class="settings-btn" id="settingsBtn" title="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Settings (hidden by default) -->
+    <div class="settings-panel" id="settingsPanel" style="display:none">
+      <div class="settings-row">
+        <div class="settings-group">
+          <label class="settings-label" id="labelLanguage">Language</label>
+          <div class="seg-buttons">
+            <button class="lang-btn active" data-lang="en">English</button>
+            <button class="lang-btn" data-lang="ko">한국어</button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" id="labelTheme">Theme</label>
+          <div class="seg-buttons">
+            <button class="theme-btn active" data-theme="dark" id="themeDark">Dark</button>
+            <button class="theme-btn" data-theme="light" id="themeLight">Light</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" id="labelWindow">Window mode</label>
+        <div class="seg-buttons">
+          <button class="mode-btn active" data-mode="default" id="modeDefault">Default</button>
+          <button class="mode-btn" data-mode="mini" id="modeMini">Mini</button>
+          <button class="mode-btn" data-mode="character" id="modeCharacter">Character</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" id="labelOnTop">Always on top</label>
+        <div class="seg-buttons">
+          <button class="ontop-btn active" data-ontop="off" id="onTopOff">Off</button>
+          <button class="ontop-btn" data-ontop="on" id="onTopOn">On</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" id="labelCredentials">Credentials</label>
+        <div class="cred-row">
+          <span class="cred-dot" id="credDot"></span>
+          <span class="cred-status" id="credStatus">Checking...</span>
+          <button class="refresh-btn" id="credRefreshBtn">Refresh</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- First-run login (인증 파일 없을 때만 노출) -->
+      <div class="login-card" id="loginCard" style="display:none">
+        <div class="login-title" id="loginTitle">Claude Code sign-in required</div>
+        <div class="login-desc" id="loginDesc">Installs Claude Code if missing, then opens the browser to sign in.</div>
+        <button class="login-btn" id="loginBtn">Start sign-in</button>
+        <div class="login-hint" id="loginHint"></div>
+      </div>
+
+      <!-- Character mode stage — 창 없이 캐릭터와 말풍선만 표시 -->
+      <div class="char-stage" id="charStage">
+        <div class="char-controls" id="charControls">
+          <button class="char-ctrl" id="charMinBtn" title="최소화">&#8722;</button>
+          <button class="char-ctrl" id="charSettingsBtn" title="설정">&#9881;</button>
+          <button class="char-ctrl char-ctrl-close" id="charQuitBtn" title="종료">&#10005;</button>
+        </div>
+        <div class="char-track">
+          <div class="char-walker" id="charWalker">
+            <div class="char-bubble" id="charBubble">
+              <span class="char-bubble-percent" id="charPercent">--</span>
+            </div>
+            <div class="char-body" id="charBody">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Session -->
+      <div class="glass-card" id="cardSession">
+        <div class="card-header">
+          <span class="card-title" id="cardSessionTitle">Current session</span>
+          <span class="card-percent" id="sessionPercent">0%</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bg">
+            <div class="progress-fill" id="sessionProgress"></div>
+          </div>
+          <div class="progress-scale">
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+          </div>
+        </div>
+        <span class="reset-text" id="sessionReset">Resets in --</span>
+      </div>
+
+      <!-- Weekly Limits -->
+      <div class="glass-card" id="cardWeekly">
+        <div class="card-header">
+          <span class="card-title">Weekly limits</span>
+          <a class="learn-more" href="#" id="learnMore">Learn more</a>
+        </div>
+
+        <!-- All models -->
+        <div class="sub-header">
+          <span class="sub-title">All models</span>
+          <span class="sub-percent" id="allModelsPercent">0%</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bg">
+            <div class="progress-fill" id="allModelsProgress"></div>
+          </div>
+        </div>
+        <span class="reset-text" id="allModelsReset"></span>
+
+        <!-- 모델 스코프 한도 (모델명은 API 응답에서 받음). 해당 한도가 없으면 통째로 숨김 -->
+        <div id="scopedBlock">
+          <div class="card-divider"></div>
+          <div class="sub-header">
+            <span class="sub-title" id="scopedTitle">Model limit</span>
+            <span class="sub-percent" id="scopedPercent">0%</span>
+          </div>
+          <div class="progress-container">
+            <div class="progress-bg">
+              <div class="progress-fill" id="scopedProgress"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto Sync -->
+      <div class="sync-row" id="syncRow">
+        <span class="sync-label">Auto-sync</span>
+        <div class="sync-buttons">
+          <button class="sync-btn" data-interval="0">manual</button>
+          <button class="sync-btn" data-interval="300">5m</button>
+          <button class="sync-btn active" data-interval="600">10m</button>
+          <button class="sync-btn" data-interval="1200">20m</button>
+          <button class="sync-btn" data-interval="1800">30m</button>
+          <button class="sync-btn" data-interval="3600">1h</button>
+        </div>
+      </div>
+      <span class="sync-note" id="syncNote">Note: rate limit is per-account. Use 10min if running on multiple devices.</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="divider"></div>
+    <div class="footer">
+      <span class="version" id="appVersion"></span>
+      <span class="last-sync" id="lastSync">never</span>
+      <button class="footer-btn sync" id="syncBtn">sync</button>
+      <span class="footer-sep">|</span>
+      <button class="footer-btn min" id="minBtn" title="최소화">─</button>
+      <span class="footer-sep">|</span>
+      <button class="footer-btn quit" id="quitBtn" title="종료">×</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

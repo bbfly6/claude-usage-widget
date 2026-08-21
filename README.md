@@ -1,0 +1,89 @@
+# Claude Usage Widget by R
+
+Claude Code 사용량을 데스크톱에서 실시간으로 확인하는 위젯입니다.
+
+> **비공식 도구입니다.** Anthropic이 만들거나 보증한 제품이 아니며, Anthropic과 아무 관련이 없습니다.
+> *Unofficial tool. Not made, endorsed, or affiliated with Anthropic.*
+
+<br>
+
+## 무엇을 보여주나
+
+- **현재 세션** — 5시간 단위 사용률과 초기화까지 남은 시간
+- **주간 사용량** — 전체 모델 / Sonnet 전용 각각의 사용률
+
+<br>
+
+## 필요한 것
+
+- Windows 10 (1809+) 또는 Windows 11, 64bit
+- **Claude 유료 플랜** (Pro / Max / Team / Enterprise)
+  무료 플랜은 Claude Code를 쓸 수 없어 위젯도 동작하지 않습니다.
+
+Claude Code는 따로 설치하지 않아도 됩니다. 위젯의 **[로그인 시작]** 버튼이 설치와 로그인을 함께 처리합니다.
+
+<br>
+
+## 설치
+
+[Releases](https://github.com/bbfly6/claude-usage-widget/releases/latest)에서 최신 설치본을 내려받아 실행합니다.
+
+코드 서명을 하지 않아 `Windows의 PC 보호` 경고가 뜹니다. **[추가 정보] → [실행]** 을 누르면 설치가 진행됩니다.
+
+첫 실행 시 위젯 상단에 로그인 카드가 뜹니다. **[로그인 시작]** 을 누르면 콘솔 창이 열려 Claude Code 설치(미설치 시)와 브라우저 로그인을 안내합니다. 완료되면 위젯이 자동으로 인식합니다.
+
+한 번 설치하면 이후 버전은 **자동으로 업데이트**됩니다. 백그라운드로 내려받고 다음 실행 때 적용됩니다.
+
+<br>
+
+## 기능
+
+| 기능 | 설명 |
+|---|---|
+| 창 모드 | **기본** / **미니**(현재 세션만) / **캐릭터**(말풍선 표시) |
+| 테마 | 다크 / 라이트 |
+| 항상 최상단 | 다른 창 위에 고정 |
+| 언어 | 한국어 / English |
+| 자동 동기화 | 수동 · 5분 · 10분 · 20분 · 30분 · 1시간 |
+
+창을 닫으면 트레이로 숨겨집니다. 완전히 끄려면 트레이 아이콘을 우클릭해 종료합니다.
+
+> 사용량 조회 API는 **계정 단위**로 속도 제한이 걸립니다. 여러 기기에서 동시에 쓴다면 기기당 10분 간격을 권장합니다.
+
+<br>
+
+## 개인정보 · 보안
+
+- 각 PC의 Claude Code 인증 정보(`~/.claude/.credentials.json`)를 **읽기 전용**으로만 사용합니다. 수정하거나 갱신하지 않습니다. 토큰 갱신은 Claude Code가 담당합니다.
+- 인증 정보를 외부로 전송하지 않습니다.
+- 통신 대상은 Anthropic 공식 사용량 API 한 곳뿐입니다.
+- 내부 서버는 `127.0.0.1` 에만 바인딩하며, 실행할 때마다 생성되는 세션 토큰을 요구합니다. 다른 프로세스나 웹사이트가 호출할 수 없습니다.
+- 로그인 시 실행하는 설치 스크립트는 Anthropic 공식 배포본(`claude.ai/install.ps1`)입니다.
+
+<br>
+
+## 직접 빌드하기
+
+```bash
+npm install
+npm run build:win
+```
+
+`dist/` 에 설치본이 생성됩니다.
+
+`npm run build:win` 은 세 단계입니다 — 언패키지 빌드 → 아이콘·버전정보 삽입(`stamp-icon.js`) → 설치본 패키징.
+`win.signAndEditExecutable` 이 꺼져 있어 electron-builder가 rcedit 단계를 건너뛰기 때문에, 아이콘을 따로 넣어줘야 합니다. 이 설정을 켜면 코드 서명 툴체인 압축 해제에서 권한 오류로 빌드가 실패합니다.
+
+<br>
+
+## 만든 것
+
+Electron · Node.js 표준 모듈만 사용합니다. 런타임 의존성은 자동 업데이트를 위한 `electron-updater` 하나뿐입니다.
+
+<br>
+
+## 라이선스
+
+MIT — [LICENSE](LICENSE) 참조.
+
+Claude 및 Anthropic 관련 상표·로고의 권리는 Anthropic PBC에 있습니다.

@@ -1,0 +1,29 @@
+# 빌드 산출물
+node_modules/
+dist/
+배포/
+
+# 시크릿 (github_rules.md 필수 항목)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+secrets.json
+config.json
+credentials.json
+token.json
+service-account*.json
+*.db
+*.sqlite
+*.sqlite3
+
+# OS · 편집기
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

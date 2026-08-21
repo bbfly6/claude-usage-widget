@@ -1,0 +1,81 @@
+{
+  "name": "claude-usage-widget",
+  "version": "1.6.1",
+  "description": "Claude Code 사용량 실시간 위젯 — 비공식 도구 (Anthropic 무관)",
+  "author": "Roy",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node src/server.js",
+    "build": "electron-builder",
+    "build:portable": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis",
+    "build:all": "electron-builder --win portable nsis",
+    "stamp": "node stamp-icon.js",
+    "build:win": "electron-builder --win --dir && npm run stamp && electron-builder --prepackaged dist/win-unpacked --win nsis"
+  },
+  "build": {
+    "appId": "com.roy.claude-usage-widget",
+    "productName": "Claude Usage Widget by R",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "!**/*.md",
+      "!**/.git/**"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "src/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Claude Usage Widget by R",
+      "uninstallDisplayName": "Claude Usage Widget by R",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "bbfly6",
+        "repo": "claude-usage-widget"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bbfly6/claude-usage-widget.git"
+  },
+  "license": "MIT"
+}
