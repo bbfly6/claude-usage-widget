@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>캐릭터 모션 미리보기</title>
+<title>Character Motion Preview</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -81,7 +81,7 @@
     color: var(--text-secondary);
   }
 
-  /* ===== 위젯과 동일한 캐릭터 무대 ===== */
+  /* ===== Same character stage as the widget ===== */
   .char-stage {
     height: 176px;
     display: flex;
@@ -194,10 +194,10 @@
 <body>
 
 <div class="head">
-  <h1>캐릭터 모드 — 사용량 구간별 모션</h1>
+  <h1>Character mode &mdash; motion by usage tier</h1>
   <p class="sub">
-    실제 위젯과 동일한 CSS·마크업으로 동작합니다. 좌우 이동 폭과 속도, 점프 주기 모두 실제 값 그대로입니다.<br>
-    실제 위젯에서는 이 중 현재 사용량에 해당하는 하나만 표시됩니다.
+    Runs on the same CSS and markup as the widget. Travel distance, speed and jump timing are the real values.<br>
+    The widget shows only the one tier that matches your current usage.
   </p>
 </div>
 
@@ -205,8 +205,8 @@
 
   <div class="cell">
     <div class="cell-head">
-      <div class="range c-sleep">0 ~ 10%</div>
-      <div class="desc">눈 감고 잠 · ZZZ 표시<br>호흡 3.4초 주기</div>
+      <div class="range c-sleep">0 &ndash; 10%</div>
+      <div class="desc">Sleeps with eyes shut, ZZZ<br>Breathing on a 3.4s cycle</div>
     </div>
     <div class="char-stage tier-sleep">
       <div class="char-track">
@@ -231,8 +231,8 @@
 
   <div class="cell">
     <div class="cell-head">
-      <div class="range c-slow">10% 초과 ~ 30%</div>
-      <div class="desc">좌우로 천천히 걷기<br>±46px · 6.4초 왕복</div>
+      <div class="range c-slow">&gt; 10 &ndash; 30%</div>
+      <div class="desc">Walks slowly side to side<br>&plusmn;46px &middot; 6.4s round trip</div>
     </div>
     <div class="char-stage tier-walk-slow">
       <div class="char-track">
@@ -250,8 +250,8 @@
 
   <div class="cell">
     <div class="cell-head">
-      <div class="range c-fast">30% 초과 ~ 50%</div>
-      <div class="desc">좌우로 빠르게 걷기<br>±46px · 2.4초 왕복</div>
+      <div class="range c-fast">&gt; 30 &ndash; 50%</div>
+      <div class="desc">Walks quickly side to side<br>&plusmn;46px &middot; 2.4s round trip</div>
     </div>
     <div class="char-stage tier-walk-fast">
       <div class="char-track">
@@ -269,8 +269,8 @@
 
   <div class="cell">
     <div class="cell-head">
-      <div class="range c-jump">50% 초과 ~ 80%</div>
-      <div class="desc">제자리에서 위아래로 뛰기<br>0.52초 주기 · 20px</div>
+      <div class="range c-jump">&gt; 50 &ndash; 80%</div>
+      <div class="desc">Jumps in place<br>0.52s cycle &middot; 20px high</div>
     </div>
     <div class="char-stage tier-jump">
       <div class="char-track">
@@ -288,8 +288,8 @@
 
   <div class="cell">
     <div class="cell-head">
-      <div class="range c-fire">80% 초과 ~ 100%</div>
-      <div class="desc">불붙어 사방으로 날뛰기<br>좌우 0.62초 + 상하 0.3초</div>
+      <div class="range c-fire">&gt; 80 &ndash; 100%</div>
+      <div class="desc">Catches fire and darts around<br>0.62s horizontal + 0.3s vertical</div>
     </div>
     <div class="char-stage tier-fire">
       <div class="char-track">
@@ -319,8 +319,8 @@
 </div>
 
 <p class="foot">
-  실제 위젯 창은 240 × 210 이라 이 미리보기보다 좌우 여백이 좁습니다. 걷기 폭(±46px)은 그 안에 들어가도록 맞춰져 있습니다.<br>
-  모든 모션은 transform · opacity 만 사용해 CPU 부담이 없고, 시스템 "동작 줄이기" 설정에서는 전부 정지합니다.
+  The real widget window is 240 &times; 210, so it has less room on either side than this preview. The walk range (&plusmn;46px) is tuned to fit inside it.<br>
+  Every motion uses only <code>transform</code> and <code>opacity</code>, so the CPU cost is negligible, and all of it stops when the system's reduce-motion setting is on.
 </p>
 
 </body>
