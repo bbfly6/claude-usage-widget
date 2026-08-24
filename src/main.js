@@ -66,8 +66,9 @@ function buildMenu() {
       label: '도움말',
       submenu: [
         {
-          label: 'Anthropic 사용량 안내',
-          click: () => shell.openExternal('https://support.anthropic.com/en/articles/9964580-how-does-usage-work-on-claude-ai'),
+          label: 'Claude 사용량 한도 안내',
+          // src/renderer.js 의 HELP_USAGE_URL 과 같은 주소. 바꿀 때 두 곳 다 고칠 것.
+          click: () => shell.openExternal('https://support.claude.com/en/articles/9797557-usage-limit-best-practices'),
         },
       ],
     },

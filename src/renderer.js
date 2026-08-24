@@ -12,6 +12,12 @@ const MAX_BACKOFF = 3600; // backoff 상한 1시간
 
 const API_BASE = window.location.origin;
 
+// 5시간 세션 한도와 주간 한도(전체 모델 / Opus)를 함께 설명하는 문서 — 위젯의 진행바 3개와 대응한다.
+// 옛 주소(support.anthropic.com/.../9964580)는 도메인 이동 후 문서가 사라져 404 였다 (260824 확인).
+// contextIsolation 때문에 렌더러가 main.js 를 require 할 수 없어 값이 두 군데에 있다.
+// 바꿀 때 src/main.js 의 트레이 '도움말' 항목도 같이 고칠 것.
+const HELP_USAGE_URL = 'https://support.claude.com/en/articles/9797557-usage-limit-best-practices';
+
 const i18n = {
   en: {
     appTitle: 'Claude Usage Widget by R',
@@ -596,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('#learnMore').addEventListener('click', (e) => {
     e.preventDefault();
-    window.open('https://support.anthropic.com/en/articles/9964580-how-does-usage-work-on-claude-ai', '_blank');
+    window.open(HELP_USAGE_URL, '_blank');
   });
 
   // Footer window controls (Electron 환경에서만 widgetAPI 존재)
