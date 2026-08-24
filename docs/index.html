@@ -174,9 +174,9 @@
   /* ===== 캐릭터 모션 (character-motion-preview.html 의 애니메이션을 그대로 사용) ===== */
   .motion-grid {
     display: grid;
-    /* 5구간을 한 줄에 늘어놓아야 사용량이 올라가는 흐름으로 읽힌다.
-       auto-fit 으로 두면 4+1 로 갈라져 마지막 하나가 외톨이가 된다. */
-    grid-template-columns: repeat(5, 1fr);
+    /* 6구간을 한 줄에 늘어놓아야 사용량이 올라가는 흐름으로 읽힌다.
+       auto-fit 으로 두면 5+1 로 갈라져 마지막 하나가 외톨이가 된다. */
+    grid-template-columns: repeat(6, 1fr);
     gap: 10px;
 
     --card-bg:        #262626;
@@ -294,6 +294,50 @@
   .motion-grid .tier-fire .char-walker { animation: panic-x 0.62s ease-in-out infinite alternate; }
   .motion-grid .tier-fire .char-body { animation: jump-y 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
 
+  /* 100% — 한도 소진. 불이 꺼지고 회색으로 굳는다 */
+  .motion-grid .char-eyes-x,
+  .motion-grid .char-halo { display: none; }
+  .motion-grid .tier-dead .char-eyes-x,
+  .motion-grid .tier-dead .char-halo { display: block; }
+
+  .motion-grid .char-halo {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 34px;
+    height: 11px;
+    margin-left: -17px;
+    border: 2.5px solid var(--warning);
+    border-radius: 50%;
+    box-shadow: 0 0 9px rgba(251, 191, 36, 0.55);
+    pointer-events: none;
+  }
+
+  /* 진입 동작은 char-body 에, 이후 부유는 char-svg 에 —
+     같은 요소에 transform 애니메이션 둘을 걸면 뒤엣것이 앞엣것을 덮는다 */
+  .motion-grid .char-body { transform-origin: 50% 100%; }
+  .motion-grid .char-svg { transform-origin: 50% 100%; }
+  .motion-grid .tier-dead .char-body { animation: angel-drop 0.55s cubic-bezier(0.32, 0, 0.24, 1) both; }
+  .motion-grid .tier-dead .char-svg {
+    filter: grayscale(1) brightness(0.74);
+    opacity: 0.9;
+    animation: angel-float 4s ease-in-out infinite 0.55s;
+  }
+  .motion-grid .tier-dead .char-halo { animation: halo-bob 4s ease-in-out infinite; }
+
+  @keyframes angel-drop {
+    0%   { transform: translateY(-5px) scaleY(1); }
+    100% { transform: translateY(5px)  scaleY(0.94); }
+  }
+  @keyframes angel-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+  @keyframes halo-bob {
+    0%, 100% { transform: translateY(0)    scaleX(1);    opacity: 0.85; }
+    50%      { transform: translateY(-3px) scaleX(0.92); opacity: 1; }
+  }
+
   @keyframes walk-x { from { transform: translateX(-46px); } to { transform: translateX(46px); } }
   @keyframes panic-x { from { transform: translateX(-34px); } to { transform: translateX(34px); } }
   @keyframes step-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
@@ -307,8 +351,8 @@
   .motion-grid .tier-walk-fast .char-walker { animation-name: motion-walk-x; }
   .motion-grid .tier-fire .char-walker { animation-name: motion-panic-x; }
 
-  @keyframes motion-walk-x  { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
-  @keyframes motion-panic-x { from { transform: translateX(-22px); } to { transform: translateX(22px); } }
+  @keyframes motion-walk-x  { from { transform: translateX(-22px); } to { transform: translateX(22px); } }
+  @keyframes motion-panic-x { from { transform: translateX(-16px); } to { transform: translateX(16px); } }
 
   @media (max-width: 860px) { .motion-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 560px) { .motion-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -586,7 +630,7 @@
       </figure>
       <figure class="motion-cell">
         <figcaption>
-          <span class="motion-range">80% 초과</span>
+          <span class="motion-range">80 ~ 100%</span>
           <span class="motion-desc">불이 붙어 날뛰기</span>
         </figcaption>
         <div class="char-stage tier-fire">
@@ -613,7 +657,35 @@
         </div>
         </div>
       </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">100%</span>
+          <span class="motion-desc">한도 소진, 사망</span>
+        </figcaption>
+        <div class="char-stage tier-dead">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent danger">100%</span></div>
+        <div class="char-body">
+        <div class="char-halo"></div>
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        <g class="char-eyes-x">
+        <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+        <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+        <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3" stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+        </g>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
     </div>
+    <p class="sub" style="margin-top: var(--sp-3)">
+      5시간 한도를 다 쓰면 캐릭터가 회색으로 굳고 머리 위에 링이 생깁니다.
+      다음 충전 시각은 기본 창에서 확인할 수 있습니다.
+    </p>
   </section>
 
   <section>

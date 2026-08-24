@@ -172,10 +172,12 @@ async function applyAlwaysOnTop(flag) {
 }
 
 // 사용량 구간별 캐릭터 모션
-// 0~10 잠 · ~30 느린 걷기 · ~50 빠른 걷기 · ~80 점프 · 그 위 불붙어 날뛰기
-const CHAR_TIERS = ['tier-sleep', 'tier-walk-slow', 'tier-walk-fast', 'tier-jump', 'tier-fire'];
+// 0~10 잠 · ~30 느린 걷기 · ~50 빠른 걷기 · ~80 점프 · ~100 불붙어 날뛰기 · 100 사망
+const CHAR_TIERS = ['tier-sleep', 'tier-walk-slow', 'tier-walk-fast', 'tier-jump', 'tier-fire', 'tier-dead'];
 
 function charTierFor(percent) {
+  // 말풍선에 100% 라고 적혀 있으면 캐릭터도 사망 상태여야 한다 → 표시값과 같은 반올림 기준
+  if (Math.round(percent) >= 100) return 'tier-dead';
   if (percent <= 10) return 'tier-sleep';
   if (percent <= 30) return 'tier-walk-slow';
   if (percent <= 50) return 'tier-walk-fast';

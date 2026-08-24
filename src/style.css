@@ -722,16 +722,33 @@ body.mode-character .login-card { display: flex; }
 .char-body {
   position: relative;
   will-change: transform;
+  transform-origin: 50% 100%;   /* 주저앉을 때 발이 아니라 머리가 내려오도록 */
 }
 
-.char-svg { display: block; }
+.char-svg { display: block; transform-origin: 50% 100%; }
 
 /* 구간별로만 켜지는 요소 */
 .char-eyes-shut,
+.char-eyes-x,
 .char-flame,
+.char-halo,
 .char-zzz { display: none; }
 
 .char-flame { transform-origin: 50% 100%; }
+
+/* 100% 도달 구간 — 머리 위 엔젤링 */
+.char-halo {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 34px;
+  height: 11px;
+  margin-left: -17px;
+  border: 2.5px solid var(--warning);
+  border-radius: 50%;
+  box-shadow: 0 0 9px rgba(251, 191, 36, 0.55);
+  pointer-events: none;
+}
 
 .char-zzz {
   position: absolute;
@@ -775,6 +792,23 @@ body.mode-character .login-card { display: flex; }
 .char-stage.tier-fire .char-walker { animation: panic-x 0.62s ease-in-out infinite alternate; }
 .char-stage.tier-fire .char-body { animation: jump-y 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
 
+/* 100% 도달 — 한도 소진. 불이 꺼지고 회색으로 굳는다 */
+.char-stage.tier-dead .char-eyes-x,
+.char-stage.tier-dead .char-halo { display: block; }
+
+/* 링이 머리 위 공간을 쓰므로 말풍선 꼬리와 겹치지 않게 띄운다 */
+.char-stage.tier-dead .char-walker { gap: 16px; }
+
+/* 진입 동작은 char-body 에, 이후 부유는 char-svg 에 —
+   같은 요소에 transform 애니메이션 둘을 걸면 뒤엣것이 앞엣것을 덮는다 */
+.char-stage.tier-dead .char-body { animation: angel-drop 0.55s cubic-bezier(0.32, 0, 0.24, 1) both; }
+.char-stage.tier-dead .char-svg {
+  filter: grayscale(1) brightness(0.74);
+  opacity: 0.9;
+  animation: angel-float 4s ease-in-out infinite 0.55s;
+}
+.char-stage.tier-dead .char-halo { animation: halo-bob 4s ease-in-out infinite; }
+
 @keyframes walk-x {
   from { transform: translateX(-46px); }
   to { transform: translateX(46px); }
@@ -793,6 +827,21 @@ body.mode-character .login-card { display: flex; }
 @keyframes jump-y {
   0%, 100% { transform: translateY(0); }
   45% { transform: translateY(-20px); }
+}
+
+@keyframes angel-drop {
+  0%   { transform: translateY(-5px) scaleY(1); }
+  100% { transform: translateY(5px)  scaleY(0.94); }
+}
+
+@keyframes angel-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+@keyframes halo-bob {
+  0%, 100% { transform: translateY(0)    scaleX(1);    opacity: 0.85; }
+  50%      { transform: translateY(-3px) scaleX(0.92); opacity: 1; }
 }
 
 @keyframes char-breathe {
@@ -819,7 +868,9 @@ body.mode-character .login-card { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .char-walker,
   .char-body,
+  .char-svg,
   .char-flame,
+  .char-halo,
   .char-zzz span,
   .char-bubble { animation: none !important; }
 }

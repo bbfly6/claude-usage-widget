@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-widget",
-  "version": "1.6.9",
+  "version": "1.7.0",
   "description": "Claude Code 사용량 실시간 위젯 — 비공식 도구 (Anthropic 무관)",
   "author": "Roy",
   "main": "src/main.js",
