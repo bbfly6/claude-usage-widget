@@ -19,13 +19,7 @@ if (!gotLock) {
   app.quit();
   process.exit(0);
 }
-app.on('second-instance', () => {
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    if (!mainWindow.isVisible()) mainWindow.show();
-    mainWindow.focus();
-  }
-});
+app.on('second-instance', revealWindow);
 
 // 자동 브라우저 열기 차단 후 server 로드
 process.env.NO_AUTO_BROWSER = '1';
@@ -120,6 +114,9 @@ function createWindow() {
 
   mainWindow.loadURL(URL);
 
+  // 어떤 경로로 실행됐든(설치 직후 자동 실행 포함) 창이 최소화·뒤쪽으로 묻히지 않게 한다
+  mainWindow.once('ready-to-show', revealWindow);
+
   // 창 닫기 = 트레이로 숨김 (실제 종료는 footer quit 버튼 또는 트레이 우클릭)
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
@@ -127,6 +124,17 @@ function createWindow() {
       mainWindow.hide();
     }
   });
+}
+
+// ── 창을 확실히 앞으로 꺼낸다
+// Windows 에선 **최소화된 창도 isVisible() 이 true** 다. 이 구분을 안 하면
+// 트레이 아이콘을 눌렀을 때 "복구" 가 아니라 "숨김" 이 실행돼, 안 보이는 창이
+// 더 안 보이게 된다 (260824 실측 — 설치 후 창이 최소화된 상태로 시작한 사례).
+function revealWindow() {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  mainWindow.focus();
 }
 
 // ── 항상 최상단
@@ -290,7 +298,7 @@ function createTray() {
   tray.setToolTip('Claude Usage Widget by R');
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: '열기', click: () => mainWindow && mainWindow.show() },
+      { label: '열기', click: revealWindow },
       { label: '항상 최상단 토글', click: () => mainWindow && setAlwaysOnTop(!mainWindow.isAlwaysOnTop()) },
       { type: 'separator' },
       { label: '종료', click: () => { isQuitting = true; app.quit(); } },
@@ -298,7 +306,8 @@ function createTray() {
   );
   tray.on('click', () => {
     if (!mainWindow) return;
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+    const hidden = !mainWindow.isVisible() || mainWindow.isMinimized();
+    hidden ? revealWindow() : mainWindow.hide();
   });
 }
 
