@@ -304,17 +304,51 @@ const server = http.createServer(async (req, res) => {
 });
 
 // 포트를 못 잡으면 진행하지 않고 종료한다.
-// 그냥 두면 error 이벤트가 처리되지 않아 프로세스가 죽고,
 // 억지로 계속 진행하면 Electron 창이 '그 포트를 점유한 프로세스가 주는 화면'을 로드하게 된다.
 // (단일 인스턴스 잠금이 이미 자기 자신은 막으므로, 여기 걸리면 외부 프로세스다)
+//
+// 다만 그냥 exit 하면 GUI 앱이라 사용자 눈에는 "실행해도 아무 일이 없음" 으로만 보인다.
+// 이유를 창으로 알려주고 끝낸다. 그리고 일시적인 점유일 수 있으므로 잠깐 재시도한다.
+// (작업관리자 강제 종료 후 즉시 재실행은 260824 실측상 재시도 없이도 정상 —
+//  Node 가 SO_REUSEADDR 를 걸어 잔여 소켓이 새 리스닝을 막지 않는다.
+//  재시도는 보안 프로그램 등이 순간적으로 포트를 잡는 다른 환경을 위한 여유분이다.)
+const LISTEN_RETRY_MAX = 3;
+const LISTEN_RETRY_DELAY = 700;
+let listenRetries = 0;
+
+function fatal(message) {
+  console.error('[FATAL]', message);
+  // Electron 메인 프로세스에서 로드된 경우에만 창을 띄운다 (npm run server 단독 실행 시엔 없음)
+  try {
+    require('electron').dialog.showErrorBox('Claude Usage Widget by R', message);
+  } catch { /* Electron 아님 — 콘솔 출력으로 충분 */ }
+  process.exit(1);
+}
+
 server.on('error', (err) => {
   const code = err && err.code;
-  if (code === 'EADDRINUSE') {
-    console.error(`[FATAL] 포트 ${PORT} 를 다른 프로그램이 점유하고 있어 실행을 중단합니다.`);
-  } else {
-    console.error('[FATAL] 로컬 서버 오류:', code || err);
+
+  if (code === 'EADDRINUSE' && listenRetries < LISTEN_RETRY_MAX) {
+    listenRetries += 1;
+    console.error(`[WARN] 포트 ${PORT} 사용 중 — 재시도 ${listenRetries}/${LISTEN_RETRY_MAX}`);
+    setTimeout(() => server.listen(PORT, HOST), LISTEN_RETRY_DELAY);
+    return;
   }
-  process.exit(1);
+
+  // fatal 뒤에는 반드시 return. process.exit 에만 기대면 안 된다 —
+  // showErrorBox 가 모달로 블로킹하는 동안 exit 가 즉시 끝나지 않아
+  // 아래 일반 분기까지 실행돼 안내창이 두 번 떴다 (260824 실측).
+  if (code === 'EADDRINUSE') {
+    fatal(
+      `다른 프로그램이 포트 ${PORT} 를 사용하고 있어 위젯을 시작할 수 없습니다.\n\n` +
+      `위젯이 이미 실행 중인지 확인해 주세요. 화면에 보이지 않아도 작업표시줄 오른쪽 ` +
+      `트레이 아이콘으로 숨어 있을 수 있습니다.\n\n` +
+      `트레이에도 없다면 PC를 다시 시작한 뒤 실행해 주세요.`
+    );
+    return;
+  }
+
+  fatal(`로컬 서버를 시작하지 못했습니다. (${code || err})`);
 });
 
 server.listen(PORT, HOST, () => {
