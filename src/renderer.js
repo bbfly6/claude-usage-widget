@@ -39,6 +39,9 @@ const i18n = {
     notFound: 'Not found',
     refresh: 'Refresh',
     loginTitle: 'Claude Code sign-in required',
+    loginTitleExpired: 'Sign-in expired',
+    loginDescExpired: 'Your saved sign-in has expired. Sign in again to keep reading usage.',
+    credExpired: 'Sign-in expired',
     loginDesc: 'Installs Claude Code if missing, then opens the browser to sign in.',
     loginStart: 'Start sign-in',
     loginRunning: 'In progress...',
@@ -82,6 +85,9 @@ const i18n = {
     notFound: '찾을 수 없음',
     refresh: '새로고침',
     loginTitle: 'Claude Code 로그인 필요',
+    loginTitleExpired: '로그인이 만료되었습니다',
+    loginDescExpired: '저장된 로그인이 만료됐습니다. 다시 로그인하면 사용량을 계속 읽어옵니다.',
+    credExpired: '로그인 만료됨',
     loginDesc: 'Claude Code가 없으면 설치하고, 브라우저를 열어 로그인합니다.',
     loginStart: '로그인 시작',
     loginRunning: '진행 중...',
@@ -220,7 +226,9 @@ async function checkCredentials() {
     const res = await fetch(`${API_BASE}/api/credentials`);
     const data = await res.json();
 
-    if (data.found) {
+    // found 만 보면 "파일은 있는데 토큰이 만료된" 상태에서 로그인 버튼이 숨겨져
+    // 사용자가 손쓸 방법이 없어진다. expired 를 함께 본다.
+    if (data.found && !data.expired) {
       dot.className = 'cred-dot found';
       status.textContent = t().autoDetected;
       statusIcon.textContent = '✓';
@@ -230,6 +238,16 @@ async function checkCredentials() {
       $('#loginCard').style.display = 'none';
       return true;
     }
+    if (data.found && data.expired) {
+      dot.className = 'cred-dot not-found';
+      status.textContent = t().credExpired;
+      statusIcon.textContent = '⚠';
+      statusIcon.className = 'status-icon error';
+      statusText.textContent = t().loginTitleExpired;
+      statusText.className = 'status-text error';
+      showLoginCard(true);
+      return false;
+    }
   } catch {}
 
   dot.className = 'cred-dot not-found';
@@ -238,9 +256,18 @@ async function checkCredentials() {
   statusIcon.className = 'status-icon error';
   statusText.textContent = t().notLoggedIn;
   statusText.className = 'status-text error';
-  // Electron에서만 설치·로그인 실행 가능 (브라우저 fallback에선 버튼 숨김)
-  $('#loginCard').style.display = window.widgetAPI ? 'flex' : 'none';
+  showLoginCard(false);
   return false;
+}
+
+// 로그인 카드 노출. expired=true 면 "만료" 문구로 바꿔 처음 로그인과 구분한다.
+// Electron에서만 설치·로그인 실행 가능 (브라우저 fallback에선 버튼 숨김)
+function showLoginCard(expired) {
+  const title = $('#loginTitle');
+  const desc = $('#loginDesc');
+  if (title) title.textContent = expired ? t().loginTitleExpired : t().loginTitle;
+  if (desc) desc.textContent = expired ? t().loginDescExpired : t().loginDesc;
+  $('#loginCard').style.display = window.widgetAPI ? 'flex' : 'none';
 }
 
 // ===== First-run login =====
@@ -268,6 +295,8 @@ async function startLogin() {
   clearInterval(loginPoll);
   loginPoll = setInterval(async () => {
     waited += 3;
+    // checkCredentials 는 이제 "유효한 토큰" 일 때만 true 라,
+    // 만료 상태에서 시작한 로그인도 실제 완료 시점에만 통과한다.
     if (await checkCredentials()) {
       clearInterval(loginPoll);
       loginPoll = null;
@@ -337,7 +366,11 @@ async function doSync() {
       setProgressBar('scopedProgress', usage.scopedModelPercent);
     }
 
-    $('#planBadge').textContent = usage.planName;
+    // 플랜은 인증 파일에서 온다. 알 수 없으면 배지를 숨긴다.
+    // (예전엔 'Max' 가 하드코딩돼 Pro 사용자에게도 Max 로 보였다)
+    const badge = $('#planBadge');
+    badge.textContent = usage.planName || '';
+    badge.style.display = usage.planName ? '' : 'none';
 
     const statusIcon = $('.status-icon');
     const statusText = $('#statusText');
@@ -376,9 +409,9 @@ async function doSync() {
       backoffLevel = 0;
       currentDelay = userInterval;
       statusIcon.textContent = '⚠';
-      statusText.textContent = lang === 'ko'
-        ? '토큰 만료. Claude Code를 한 번 실행해주세요'
-        : 'Token expired. Please use Claude Code to refresh';
+      statusText.textContent = t().loginTitleExpired;
+      // 안내만 띄우고 끝내면 사용자가 할 수 있는 게 없다. 로그인 버튼을 같이 노출한다.
+      showLoginCard(true);
     } else {
       backoffLevel = 0;
       currentDelay = userInterval;

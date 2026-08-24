@@ -52,6 +52,23 @@ function readCredentials() {
   } catch { return null; }
 }
 
+// 인증 파일의 subscriptionType 이 실제 플랜이다.
+// 사용량 API 응답에는 플랜·티어를 알려주는 필드가 아예 없다 (260824 실측).
+// 예전엔 'Max' 를 하드코딩해서 Pro 사용자에게도 Max 로 표시됐다.
+const PLAN_LABEL = { max: 'Max', pro: 'Pro', team: 'Team', enterprise: 'Enterprise', free: 'Free' };
+function planLabel(creds) {
+  const t = (creds && creds.subscriptionType || '').toLowerCase();
+  if (!t) return '';
+  return PLAN_LABEL[t] || (t.charAt(0).toUpperCase() + t.slice(1));
+}
+
+// accessToken 만료 여부. 위젯은 토큰을 갱신하지 않으므로(Claude Code 담당)
+// 만료되면 사용자가 다시 로그인하는 것 외에 방법이 없다.
+function isExpired(creds) {
+  if (!creds || typeof creds.expiresAt !== 'number') return false;
+  return Date.now() >= creds.expiresAt;
+}
+
 // ===== HTTPS helper =====
 function httpsRequest(url, options, body) {
   return new Promise((resolve, reject) => {
@@ -122,7 +139,12 @@ async function fetchUsage() {
     // seven_day_sonnet 은 이 계정에서 항상 null 이라 0% 로만 표시됐다 (260821 실측).
     // 실제 값은 limits[] 의 weekly_scoped 항목에 있고, 모델 이름도 여기서 온다.
     ...readScopedLimit(j),
-    planName: (j.extra_usage?.is_enabled) ? 'Max (Extra)' : 'Max',
+    // 플랜은 API 가 아니라 인증 파일에서 온다. 알 수 없으면 빈 값 → 화면에서 배지를 숨긴다.
+    planName: (() => {
+      const base = planLabel(creds);
+      if (!base) return '';
+      return j.extra_usage?.is_enabled ? `${base} (Extra)` : base;
+    })(),
   };
   return usage;
 }
@@ -231,9 +253,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/credentials') {
+      // found 만 내려주면 "파일은 있는데 토큰이 만료된" 상태를 구분할 수 없어
+      // 로그인 버튼이 숨겨진 채 막다른 길이 된다 (260824 팀원 PC 실측).
       const creds = readCredentials();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ found: !!creds }));
+      res.end(JSON.stringify({
+        found: !!creds,
+        expired: isExpired(creds),
+        plan: planLabel(creds),
+      }));
       return;
     }
 
