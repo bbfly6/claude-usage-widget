@@ -308,6 +308,7 @@ async function doSync() {
   if (isSyncing) return;
   isSyncing = true;
   $('#syncBtn').innerHTML = '<span class="syncing">↻</span>';
+  $('#charSyncBtn')?.classList.add('syncing');
 
   try {
     const res = await fetch(`${API_BASE}/api/usage`);
@@ -388,6 +389,7 @@ async function doSync() {
 
   isSyncing = false;
   $('#syncBtn').textContent = t().sync;
+  $('#charSyncBtn')?.classList.remove('syncing');
 }
 
 // 자동 동기화: setTimeout 재귀 — 429 backoff로 간격이 바뀌어도 매번 다시 예약
@@ -472,6 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#charMinBtn').addEventListener('click', () => {
     if (window.widgetAPI) window.widgetAPI.minimize();
   });
+  $('#charSyncBtn').addEventListener('click', doSync);
   $('#charQuitBtn').addEventListener('click', () => {
     if (window.widgetAPI) window.widgetAPI.quit();
     else window.close();

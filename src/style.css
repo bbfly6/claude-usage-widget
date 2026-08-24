@@ -17,7 +17,6 @@
   --glass-shadow: rgba(0, 0, 0, 0.4);
   --hairline: rgba(255, 255, 255, 0.06);
   --hairline-strong: rgba(255, 255, 255, 0.12);
-  --drag-bar: rgba(255, 255, 255, 0.15);
   --radius: 16px;
 }
 
@@ -47,20 +46,13 @@ body {
   width: 100%;
 }
 
-/* ===== Drag Handle ===== */
-.drag-handle {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
+/* ===== Drag ===== */
+/* 창 전체를 드래그 영역으로 둔다. 예전엔 상단에 얇은 바 하나만 드래그였는데
+   잡기 어렵고 자리만 차지했다. 버튼·링크류는 전부 no-drag 로 예외 처리돼 있다.
+   (main.js 에서 maximizable:false — 드래그 영역은 더블클릭 시 최대화되므로) */
+#widget {
   -webkit-app-region: drag;
-  cursor: grab;
-}
-
-.drag-bar {
-  width: 36px;
-  height: 4px;
-  background: var(--drag-bar);
-  border-radius: 2px;
+  cursor: default;
 }
 
 /* ===== Header ===== */
@@ -525,7 +517,6 @@ body {
   --success: #047857;
   --hairline: rgba(28, 27, 26, 0.08);
   --hairline-strong: rgba(28, 27, 26, 0.16);
-  --drag-bar: rgba(28, 27, 26, 0.18);
 }
 
 /* ===== Settings: 2단 배치 + 세그먼트 버튼 ===== */
@@ -537,6 +528,17 @@ body {
 .settings-row .settings-group {
   flex: 1;
   min-width: 0;
+}
+
+/* Window mode 는 버튼이 3개라 균등 분할하면 줄바꿈된다.
+   내용 폭에 맞추고 남는 공간을 사이에 둔다. */
+.settings-row.row-window {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-row.row-window .settings-group {
+  flex: 0 0 auto;
 }
 
 .seg-buttons {
@@ -600,10 +602,6 @@ body.mode-mini #syncNote { display: none; }
 
 body.mode-mini .content { padding: 7px 14px; }
 
-/* 드래그 바는 남기되 얇게 (없애면 창을 못 옮김) */
-body.mode-mini .drag-handle { padding: 4px 0 2px; }
-body.mode-mini .drag-bar { height: 3px; }
-
 /* 높이를 80% 로 줄인 만큼 카드도 슬림하게.
    퍼센트 숫자가 이미 크게 나오므로 눈금은 미니에서만 생략한다. */
 body.mode-mini .glass-card { padding: 11px 12px; gap: 6px; }
@@ -618,7 +616,6 @@ body.mode-character #syncRow,
 body.mode-character #syncNote,
 body.mode-character .footer,
 body.mode-character .header-left,
-body.mode-character .drag-handle,
 body.mode-character .divider { display: none; }
 
 body.mode-character #widget {
@@ -652,7 +649,6 @@ body.settings-open #widget {
 }
 
 body.mode-character.settings-open .char-stage { display: none; }
-body.mode-character.settings-open .drag-handle { display: flex; }
 
 /* 로그인 카드는 어떤 모드에서도 최우선 (인증 없으면 사용량 자체가 없음) */
 body.mode-mini .login-card,
@@ -867,6 +863,11 @@ body.char-hover .char-controls { opacity: 1; }
 }
 
 .char-ctrl:active { transform: scale(0.94); }
+
+/* sync 는 글리프가 아니라 SVG 라 별도 정렬 */
+.char-ctrl-sync svg { display: block; }
+.char-ctrl-sync.syncing svg { animation: spin 1s linear infinite; }
+.char-ctrl-sync.syncing { color: var(--claude-orange); }
 
 .char-ctrl:focus-visible {
   outline: 2px solid var(--claude-orange);

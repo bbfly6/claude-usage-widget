@@ -87,6 +87,8 @@ function createWindow() {
     transparent: true,       // 둥근 모서리 알파
     hasShadow: false,        // OS 그림자 비활성 (모서리 주변 회색 hue 제거)
     resizable: true,
+    // 창 전체가 드래그 영역이라 더블클릭하면 최대화된다. 위젯엔 의미 없는 동작이라 차단.
+    maximizable: false,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

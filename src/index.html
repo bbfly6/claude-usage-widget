@@ -8,11 +8,6 @@
 </head>
 <body>
   <div id="widget">
-    <!-- Drag Handle -->
-    <div class="drag-handle">
-      <div class="drag-bar"></div>
-    </div>
-
     <!-- Header -->
     <div class="header">
       <div class="header-left">
@@ -56,19 +51,21 @@
           </div>
         </div>
       </div>
-      <div class="settings-group">
-        <label class="settings-label" id="labelWindow">Window mode</label>
-        <div class="seg-buttons">
-          <button class="mode-btn active" data-mode="default" id="modeDefault">Default</button>
-          <button class="mode-btn" data-mode="mini" id="modeMini">Mini</button>
-          <button class="mode-btn" data-mode="character" id="modeCharacter">Character</button>
+      <div class="settings-row row-window">
+        <div class="settings-group">
+          <label class="settings-label" id="labelWindow">Window mode</label>
+          <div class="seg-buttons">
+            <button class="mode-btn active" data-mode="default" id="modeDefault">Default</button>
+            <button class="mode-btn" data-mode="mini" id="modeMini">Mini</button>
+            <button class="mode-btn" data-mode="character" id="modeCharacter">Character</button>
+          </div>
         </div>
-      </div>
-      <div class="settings-group">
-        <label class="settings-label" id="labelOnTop">Always on top</label>
-        <div class="seg-buttons">
-          <button class="ontop-btn active" data-ontop="off" id="onTopOff">Off</button>
-          <button class="ontop-btn" data-ontop="on" id="onTopOn">On</button>
+        <div class="settings-group">
+          <label class="settings-label" id="labelOnTop">Always on top</label>
+          <div class="seg-buttons">
+            <button class="ontop-btn active" data-ontop="off" id="onTopOff">Off</button>
+            <button class="ontop-btn" data-ontop="on" id="onTopOn">On</button>
+          </div>
         </div>
       </div>
       <div class="settings-group">
@@ -98,6 +95,13 @@
       <div class="char-stage" id="charStage">
         <div class="char-controls" id="charControls">
           <button class="char-ctrl" id="charMinBtn" title="최소화">&#8722;</button>
+          <button class="char-ctrl char-ctrl-sync" id="charSyncBtn" title="동기화">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
           <button class="char-ctrl" id="charSettingsBtn" title="설정">&#9881;</button>
           <button class="char-ctrl char-ctrl-close" id="charQuitBtn" title="종료">&#10005;</button>
         </div>
