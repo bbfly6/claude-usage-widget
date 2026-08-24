@@ -37,6 +37,9 @@ Claude Code는 따로 설치하지 않아도 됩니다. 위젯의 **[로그인 �
 
 ## 설치
 
+**설치 가이드 페이지 →** https://bbfly6.github.io/claude-usage-widget/
+화면과 함께 설치·로그인 절차를 안내합니다. 아래는 같은 내용의 요약입니다.
+
 [Releases](https://github.com/bbfly6/claude-usage-widget/releases/latest)에서 최신 설치본을 내려받아 실행합니다.
 
 코드 서명을 하지 않아 `Windows의 PC 보호` 경고가 뜹니다. **[추가 정보] → [실행]** 을 누르면 설치가 진행됩니다.
