@@ -91,6 +91,13 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      // 렌더러 샌드박스 해제.
+      // 회사 보안 정책이 Chromium 샌드박스를 차단해 렌더러가 즉시 크래시하고
+      // 빈 창만 남는다 ("Renderer process crashed" — 260824 실측).
+      // 이 창은 자기 자신의 127.0.0.1 페이지만 로드하고 외부 링크는 기본
+      // 브라우저로 넘기므로, 렌더러가 실행하는 코드는 항상 우리 코드다.
+      // contextIsolation / nodeIntegration:false 는 그대로 유지된다.
+      sandbox: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
