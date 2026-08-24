@@ -170,6 +170,155 @@
   .mode-name { font-weight: 700; font-size: 15px; }
   .mode-desc { color: var(--text-mid); font-size: 14px; line-height: 1.6; }
 
+
+  /* ===== 캐릭터 모션 (character-motion-preview.html 의 애니메이션을 그대로 사용) ===== */
+  .motion-grid {
+    display: grid;
+    /* 5구간을 한 줄에 늘어놓아야 사용량이 올라가는 흐름으로 읽힌다.
+       auto-fit 으로 두면 4+1 로 갈라져 마지막 하나가 외톨이가 된다. */
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+
+    --card-bg:        #262626;
+    --glass-border:   #3a3a3a;
+    --glass-shadow:   rgba(0, 0, 0, 0.4);
+    --text-secondary: var(--text-dim);
+    --claude-orange:  var(--accent);
+    --success:        var(--green);
+    --warning:        #FBBF24;
+    --danger:         #F87171;
+  }
+
+  .motion-cell {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: var(--sp-2) 0 0;
+    overflow: hidden;
+  }
+
+  .motion-cell figcaption { padding: 0 var(--sp-2); }
+  .motion-range { display: block; color: var(--accent); font-weight: 700; font-size: 14px; }
+  .motion-desc  { display: block; color: var(--text-mid); font-size: 13px; line-height: 1.5; }
+
+  .motion-grid .char-stage {
+    height: 176px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 0 14px;
+  }
+
+  .motion-grid .char-track {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .motion-grid .char-walker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    will-change: transform;
+  }
+
+  .motion-grid .char-bubble {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 4px 12px;
+    box-shadow: 0 2px 10px var(--glass-shadow);
+  }
+
+  .motion-grid .char-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    margin-left: -5px;
+    background: var(--card-bg);
+    border-right: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+    transform: rotate(45deg);
+  }
+
+  .motion-grid .char-bubble-percent {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--success);
+  }
+
+  .motion-grid .char-bubble-percent.warning { color: var(--warning); }
+  .motion-grid .char-bubble-percent.danger { color: var(--danger); }
+
+  .motion-grid .char-body { position: relative; will-change: transform; }
+  .motion-grid .char-svg { display: block; }
+
+  .motion-grid .char-eyes-shut, .char-flame, .char-zzz { display: none; }
+  .motion-grid .char-flame { transform-origin: 50% 100%; }
+
+  .motion-grid .char-zzz {
+    position: absolute;
+    top: -2px;
+    right: -14px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .motion-grid .char-zzz span { display: inline-block; animation: zzz-float 2.4s ease-in-out infinite; }
+  .motion-grid .char-zzz span:nth-child(2) { font-size: 12px; animation-delay: 0.8s; }
+  .motion-grid .char-zzz span:nth-child(3) { font-size: 14px; animation-delay: 1.6s; }
+
+  .motion-grid .tier-sleep .char-eyes-shut,
+  .motion-grid .tier-sleep .char-zzz { display: block; }
+  .motion-grid .tier-sleep .char-body { animation: char-breathe 3.4s ease-in-out infinite; }
+
+  .motion-grid .tier-walk-slow .char-walker { animation: walk-x 6.4s ease-in-out infinite alternate; }
+  .motion-grid .tier-walk-slow .char-body { animation: step-bob 1.5s ease-in-out infinite; }
+
+  .motion-grid .tier-walk-fast .char-walker { animation: walk-x 2.4s ease-in-out infinite alternate; }
+  .motion-grid .tier-walk-fast .char-body { animation: step-bob 0.6s ease-in-out infinite; }
+
+  .motion-grid .tier-jump .char-body { animation: jump-y 0.52s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+  .motion-grid .tier-fire .char-flame { display: block; animation: flame-flicker 0.24s steps(2) infinite; }
+  .motion-grid .tier-fire .char-walker { animation: panic-x 0.62s ease-in-out infinite alternate; }
+  .motion-grid .tier-fire .char-body { animation: jump-y 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+  @keyframes walk-x { from { transform: translateX(-46px); } to { transform: translateX(46px); } }
+  @keyframes panic-x { from { transform: translateX(-34px); } to { transform: translateX(34px); } }
+  @keyframes step-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes jump-y { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-20px); } }
+  @keyframes char-breathe { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(1px) scaleY(0.97); } }
+  @keyframes zzz-float { 0% { opacity: 0; transform: translateY(4px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-13px); } }
+  @keyframes flame-flicker { 0% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0.75; transform: scaleY(0.86); } }
+  /* 원본 걷기 폭은 ±46px 인데 가이드의 좁은 칸에서는 캐릭터가 잘린다.
+     타이밍은 그대로 두고 이동 거리만 줄인 키프레임으로 교체한다. */
+  .motion-grid .tier-walk-slow .char-walker,
+  .motion-grid .tier-walk-fast .char-walker { animation-name: motion-walk-x; }
+  .motion-grid .tier-fire .char-walker { animation-name: motion-panic-x; }
+
+  @keyframes motion-walk-x  { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
+  @keyframes motion-panic-x { from { transform: translateX(-22px); } to { transform: translateX(22px); } }
+
+  @media (max-width: 860px) { .motion-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .motion-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 380px) { .motion-grid { grid-template-columns: 1fr; } }
+
+  /* 움직임을 줄이도록 설정한 사용자에게는 정지 상태로 보여준다 */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-grid * { animation: none !important; }
+  }
+
   /* ===== Table ===== */
   .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 380px; }
@@ -353,19 +502,115 @@
   <section>
     <h2>캐릭터가 사용량에 따라 움직입니다</h2>
     <p class="sub">캐릭터 모드에서 지금 얼마나 썼는지 숫자를 보지 않고도 알 수 있습니다.</p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr><th>사용량</th><th>움직임</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>0 ~ 10%</td><td>눈 감고 잠, ZZZ 표시</td></tr>
-          <tr><td>10 ~ 30%</td><td>좌우로 천천히 걷기</td></tr>
-          <tr><td>30 ~ 50%</td><td>좌우로 빠르게 걷기</td></tr>
-          <tr><td>50 ~ 80%</td><td>위아래로 뛰기</td></tr>
-          <tr><td>80% 초과</td><td>몸에 불이 붙어 사방으로 날뛰기</td></tr>
-        </tbody>
-      </table>
+    <div class="motion-grid">
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">0 ~ 10%</span>
+          <span class="motion-desc">눈 감고 잠</span>
+        </figcaption>
+        <div class="char-stage tier-sleep">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent">3%</span></div>
+        <div class="char-body">
+        <div class="char-zzz"><span>z</span><span>z</span><span>z</span></div>
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        <g class="char-eyes-shut">
+        <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+        <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+        <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+        <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+        </g>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">10 ~ 30%</span>
+          <span class="motion-desc">좌우로 천천히 걷기</span>
+        </figcaption>
+        <div class="char-stage tier-walk-slow">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent">18%</span></div>
+        <div class="char-body">
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">30 ~ 50%</span>
+          <span class="motion-desc">좌우로 빠르게 걷기</span>
+        </figcaption>
+        <div class="char-stage tier-walk-fast">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent">42%</span></div>
+        <div class="char-body">
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">50 ~ 80%</span>
+          <span class="motion-desc">위아래로 뛰기</span>
+        </figcaption>
+        <div class="char-stage tier-jump">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent warning">64%</span></div>
+        <div class="char-body">
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">80% 초과</span>
+          <span class="motion-desc">불이 붙어 날뛰기</span>
+        </figcaption>
+        <div class="char-stage tier-fire">
+        <div class="char-track">
+        <div class="char-walker">
+        <div class="char-bubble"><span class="char-bubble-percent danger">92%</span></div>
+        <div class="char-body">
+        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
+        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+        <g class="char-flame">
+        <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+        <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+        <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+        <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+        <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+        <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+        <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+        <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+        <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+        </g>
+        </svg>
+        </div>
+        </div>
+        </div>
+        </div>
+      </figure>
     </div>
   </section>
 
