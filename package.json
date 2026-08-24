@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-widget",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Claude Code 사용량 실시간 위젯 — 비공식 도구 (Anthropic 무관)",
   "author": "Roy",
   "main": "src/main.js",
@@ -48,7 +48,9 @@
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Claude Usage Widget by R",
