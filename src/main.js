@@ -261,7 +261,7 @@ ipcMain.handle('start-login', async () => {
 
 // ── 자동 업데이트 (GitHub Releases)
 // 작업 중 창이 사라지면 안 되므로 다운로드만 백그라운드로 받고, 적용은 종료 시점에 한다.
-// 사내망에서 GitHub이 막혀 있어도 조용히 실패해야 한다 — 위젯 자체는 계속 동작.
+// 네트워크에서 GitHub 이 막혀 있어도 조용히 실패해야 한다 — 위젯 자체는 계속 동작.
 function initAutoUpdate() {
   if (!app.isPackaged) return;   // 개발 모드엔 update 메타데이터가 없어 항상 실패
   let autoUpdater;
