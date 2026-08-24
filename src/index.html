@@ -143,7 +143,7 @@
       <div class="glass-card" id="cardSession">
         <div class="card-header">
           <span class="card-title" id="cardSessionTitle">Current session</span>
-          <span class="card-percent" id="sessionPercent">0%</span>
+          <span class="card-percent" id="sessionPercent">--</span>
         </div>
         <div class="progress-container">
           <div class="progress-bg">
@@ -166,7 +166,7 @@
         <!-- All models -->
         <div class="sub-header">
           <span class="sub-title">All models</span>
-          <span class="sub-percent" id="allModelsPercent">0%</span>
+          <span class="sub-percent" id="allModelsPercent">--</span>
         </div>
         <div class="progress-container">
           <div class="progress-bg">
@@ -176,11 +176,11 @@
         <span class="reset-text" id="allModelsReset"></span>
 
         <!-- 모델 스코프 한도 (모델명은 API 응답에서 받음). 해당 한도가 없으면 통째로 숨김 -->
-        <div id="scopedBlock">
+        <div id="scopedBlock" style="display:none">
           <div class="card-divider"></div>
           <div class="sub-header">
             <span class="sub-title" id="scopedTitle">Model limit</span>
-            <span class="sub-percent" id="scopedPercent">0%</span>
+            <span class="sub-percent" id="scopedPercent">--</span>
           </div>
           <div class="progress-container">
             <div class="progress-bg">

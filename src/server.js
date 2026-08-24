@@ -133,8 +133,8 @@ async function fetchUsage() {
     sessionResetSeconds: j.five_hour?.resets_at
       ? Math.max(0, Math.floor((new Date(j.five_hour.resets_at) - Date.now()) / 1000)) : 0,
     weeklyAllModelsPercent: j.seven_day?.utilization || 0,
-    weeklyAllModelsResetDate: j.seven_day?.resets_at
-      ? new Date(j.seven_day.resets_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+    // 포맷은 렌더러가 현재 언어로 처리한다 (서버에서 en-US 로 굳히면 한글 UI 에 영어가 섞인다)
+    weeklyAllModelsResetAt: j.seven_day?.resets_at || '',
     // 모델 스코프 주간 한도.
     // seven_day_sonnet 은 이 계정에서 항상 null 이라 0% 로만 표시됐다 (260821 실측).
     // 실제 값은 limits[] 의 weekly_scoped 항목에 있고, 모델 이름도 여기서 온다.

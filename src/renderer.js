@@ -317,20 +317,35 @@ async function startLogin() {
 // 언어를 바꾸면 정적 라벨만 갱신되고 시간·동기화 문구는 다음 동기화까지 이전 언어로 남는다.
 // 마지막 응답을 들고 있다가 즉시 다시 그린다.
 let lastUsage = null;
-let lastSyncTime = '';
+let lastSyncAt = null;   // 포맷된 문자열이 아니라 시각 자체를 보관 — 언어 전환 시 다시 포맷
 let scopedModelName = '';
+
+// 시각 표기는 현재 UI 언어를 따른다. en-US 로 굳히면 한글 화면에 'Sun 12:00 AM',
+// '11:46 am' 같은 영어가 섞여 나온다 (260824 실측).
+function locale() { return lang === 'ko' ? 'ko-KR' : 'en-US'; }
+
+function fmtResetAt(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleString(locale(), { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function fmtClock(d) {
+  return d.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
 
 function renderResetTexts() {
   if (!lastUsage) return;
   const hrs = Math.floor(lastUsage.sessionResetSeconds / 3600);
   const mins = Math.floor((lastUsage.sessionResetSeconds % 3600) / 60);
   $('#sessionReset').textContent = (hrs === 0 && mins === 0) ? t().resetsSoon : t().resetsIn(hrs, mins);
-  $('#allModelsReset').textContent = lastUsage.weeklyAllModelsResetDate
-    ? t().resetsAt(lastUsage.weeklyAllModelsResetDate) : '';
+  const resetAt = fmtResetAt(lastUsage.weeklyAllModelsResetAt);
+  $('#allModelsReset').textContent = resetAt ? t().resetsAt(resetAt) : '';
 }
 
 function renderLastSync() {
-  $('#lastSync').textContent = lastSyncTime ? t().lastSync(lastSyncTime) : t().never;
+  $('#lastSync').textContent = lastSyncAt ? t().lastSync(fmtClock(lastSyncAt)) : t().never;
 }
 
 async function doSync() {
@@ -379,9 +394,7 @@ async function doSync() {
     statusText.textContent = t().connected;
     statusText.className = 'status-text connected';
 
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-    lastSyncTime = timeStr;
+    lastSyncAt = new Date();
     renderLastSync();
 
     // 정상 응답 → backoff 해제, 원래 간격 복귀
