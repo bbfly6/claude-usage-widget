@@ -61,6 +61,9 @@ function stamp(appOutDir) {
     '--set-version-string', 'CompanyName', pkg.author,
     '--set-version-string', 'InternalName', productName,
     '--set-version-string', 'OriginalFilename', `${productName}.exe`,
+    // 지정하지 않으면 Electron 기본값 'Copyright (C) 2015 GitHub, Inc.' 가 그대로 남는다.
+    // 서명 없는 exe 가 남의 회사 저작권을 달고 있으면 보안 검토에서 의심을 산다.
+    '--set-version-string', 'LegalCopyright', `Copyright (c) 2026 ${pkg.author} — ${pkg.license} License`,
     '--set-file-version', pkg.version,
     '--set-product-version', pkg.version,
   ], { stdio: 'inherit' });
