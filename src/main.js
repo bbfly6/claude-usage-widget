@@ -5,6 +5,14 @@ const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 
+// GPU 샌드박스 완화.
+// 회사 보안 정책이 Chromium GPU 샌드박스를 차단하는 PC 에서는 GPU 프로세스가
+// 0x80000003 으로 즉시 죽고, 6회 연속 실패하면 Electron 이 앱 전체를 종료한다
+//   ("GPU process isn't usable. Goodbye.")  — 260824 실측, 창이 뜨자마자 꺼짐.
+// --disable-gpu 는 효과 없음(프로세스는 여전히 뜨고 같은 코드로 죽음). 샌드박스 완화만 통한다.
+// 이 앱은 자기 자신의 127.0.0.1 페이지만 로드하므로 외부 콘텐츠 노출면이 없다.
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+
 // 두 번째 인스턴스 차단: 단축아이콘 두 번 눌러도 EADDRINUSE 안 나고 첫 창에 포커스만
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -250,7 +258,7 @@ function initAutoUpdate() {
     }
   });
 
-  const check = () => { try { autoUpdater.checkForUpdates(); } catch {} };
+  const check = () => { try { autoUpdater.checkForUpdates()?.catch(() => {}); } catch {} };
   check();
   setInterval(check, 6 * 60 * 60 * 1000);   // 6시간마다
 }

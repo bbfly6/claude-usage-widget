@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-widget",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Claude Code 사용량 실시간 위젯 — 비공식 도구 (Anthropic 무관)",
   "author": "Roy",
   "main": "src/main.js",
@@ -12,10 +12,11 @@
     "build:installer": "electron-builder --win nsis",
     "build:all": "electron-builder --win portable nsis",
     "stamp": "node stamp-icon.js",
-    "build:win": "electron-builder --win --dir && npm run stamp && electron-builder --prepackaged dist/win-unpacked --win nsis"
+    "build:win": "electron-builder --win nsis"
   },
   "build": {
     "appId": "com.roy.claude-usage-widget",
+    "afterPack": "./stamp-icon.js",
     "productName": "Claude Usage Widget by R",
     "directories": {
       "output": "dist"
