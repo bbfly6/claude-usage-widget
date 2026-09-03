@@ -27,3 +27,6 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+
+# mac 빌드 산출물
+mac/dist/
