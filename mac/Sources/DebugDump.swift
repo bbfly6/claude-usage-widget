@@ -36,4 +36,75 @@ extension AppDelegate {
         let names = tiers.map(\.0) + ["revive"]
         Dbg.log("프레임 시트: " + rows.enumerated().map { "\(names[$0.offset])=\($0.element.count)" }.joined(separator: " "))
     }
+
+    /// 맥 전용 설정 4종이 실제로 먹는지 스스로 눌러보고 원래대로 되돌린다.
+    /// 사용자 시스템 설정(다크모드)을 건드리지 않고 검증하기 위한 것.
+    func selfTest() async {
+        guard Dbg.enabled else { return }
+
+        // 1) 시스템 테마 추종 — 네이티브가 알려주는 경로를 그대로 태운다
+        let before = try? await webView.evaluateJavaScript("document.documentElement.getAttribute('data-theme')")
+        _ = try? await webView.evaluateJavaScript("localStorage.setItem('macThemeMode','system')")
+        for want in ["light", "dark"] {
+            _ = try? await webView.evaluateJavaScript("window.__macAppearanceChanged('\(want)')")
+            try? await Task.sleep(for: .milliseconds(120))
+            let got = try? await webView.evaluateJavaScript("document.documentElement.getAttribute('data-theme')")
+            let act = try? await webView.evaluateJavaScript(
+                "document.querySelector('#macThemeSystem').classList.contains('active')")
+            Dbg.log("[검증] 시스템테마 \(want) -> data-theme=\(got ?? "?") 시스템버튼활성=\(act ?? "?")")
+        }
+        _ = try? await webView.evaluateJavaScript("localStorage.setItem('macThemeMode','manual')")
+        if let b = before as? String {
+            _ = try? await webView.evaluateJavaScript(
+                "document.querySelector('.theme-btn[data-theme=\"\(b)\"]').click()")
+        }
+
+        // 2) 메뉴바 % 표시
+        let on = statusTitle()
+        togglePercentForTest()
+        let off = statusTitle()
+        togglePercentForTest()
+        Dbg.log("[검증] %표시 켬='\(on)' 끔='\(off)' 복원='\(statusTitle())'")
+
+        // 3) 로그인 시 자동 시작 — 상태만 읽는다.
+        //    예전엔 여기서 켰다 껐는데, unregister 직후의 status 가 아직 갱신되지 않아
+        //    '되돌렸다'고 로그를 남기고도 실제로는 켜진 채로 남았다 (260904 실측).
+        //    사용자 시스템에 남는 설정이므로 점검이 건드리지 않는다.
+        Dbg.log("[검증] 자동시작 현재=\(LaunchAtLogin.isEnabled) 승인필요=\(LaunchAtLogin.needsApproval)")
+        // 점검이 켜놓고 간 것을 한 번 정리한다 (CLAUDE_WIDGET_RESET_LOGIN=1)
+        if ProcessInfo.processInfo.environment["CLAUDE_WIDGET_RESET_LOGIN"] == "1" {
+            LaunchAtLogin.set(false)
+            try? await Task.sleep(for: .milliseconds(500))
+            Dbg.log("[정리] 자동시작 해제 -> \(LaunchAtLogin.isEnabled)")
+        }
+
+        // 설정 화면 캡처 — '시스템' 버튼이 320px 폭에서 어떻게 앉는지 눈으로 본다
+        _ = try? await webView.evaluateJavaScript("document.querySelector('#settingsBtn').click()")
+        try? await Task.sleep(for: .milliseconds(300))
+        await snapshot("settings")
+        // 테마 버튼 3개가 한 줄에 앉는지 — 한국어/영어 둘 다 본다.
+        // offsetTop 이 전부 같으면 한 줄이다.
+        let rowCheck = """
+        (() => {
+          const t = [...document.querySelectorAll('.theme-btn')];
+          return t.map(b => b.offsetTop).join(',') + ' / ' + t.map(b => b.textContent).join(' ');
+        })()
+        """
+        // 점검이 끝나면 원래 언어로 돌려놔야 한다 — 안 그러면 확인만 했는데 화면이 영어로 바뀐다
+        let langBefore = (try? await webView.evaluateJavaScript(
+            "(JSON.parse(localStorage.getItem('claudeWidgetSettings'))||{}).lang || 'en'")) as? String ?? "en"
+        for lang in ["ko", "en"] {
+            _ = try? await webView.evaluateJavaScript(
+                "document.querySelector('.lang-btn[data-lang=\"\(lang)\"]').click()")
+            try? await Task.sleep(for: .milliseconds(150))
+            let r = try? await webView.evaluateJavaScript(rowCheck)
+            Dbg.log("[검증] 테마버튼 줄바꿈(\(lang)) offsetTop=\(r ?? "?")")
+        }
+        _ = try? await webView.evaluateJavaScript(
+            "document.querySelector('.lang-btn[data-lang=\"\(langBefore)\"]').click()")
+        _ = try? await webView.evaluateJavaScript("document.querySelector('#settingsBtn').click()")
+
+        // 4) 단축키 — 실제 키 입력 없이 등록 상태와 발동 경로만 확인한다
+        Dbg.log("[검증] 단축키 \(Prefs.hotKeyLabel) 등록=\(HotKeyCenter.shared.isActive) 콜백연결=\(HotKeyCenter.shared.onFire != nil)")
+    }
 }

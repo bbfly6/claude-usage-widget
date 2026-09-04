@@ -68,6 +68,13 @@
         }).filter(Boolean).join(', ') + ' { cursor: pointer !important; }'
       : ''),
     'button, button *, a, a * { cursor: pointer !important; }',
+
+    /* 테마 버튼이 셋(다크·라이트·자동)이 되면서 320px 폭에서 한 줄에 안 들어간다.
+       style.css 는 flex-wrap 이라 줄바꿈되긴 하는데 옆의 '언어' 열과 높이가 어긋난다.
+       라벨을 '자동/Auto' 로 줄여도 여전히 넘쳐서(실측 offsetTop 73,73,100)
+       좌우 여백까지 줄인다. 세로 여백은 그대로라 다른 버튼과 높이는 같다. */
+    '.theme-btn { padding-left: 7px !important; padding-right: 7px !important; }',
+
     'button:disabled, button:disabled *, .login-btn:disabled, .login-btn:disabled * { cursor: default !important; }',
   ].join('\n');
   (document.head || document.documentElement).appendChild(macCSS);
@@ -84,6 +91,80 @@
   // 언어 버튼을 누르면 renderer 가 저장한 뒤에 읽어야 하므로 한 틱 미룬다
   document.addEventListener('click', (e) => {
     if (e.target && e.target.closest && e.target.closest('.lang-btn')) setTimeout(reportLang, 0);
+  }, true);
+
+  // ── 6) 시스템 테마 자동 추종 (맥 전용)
+  //
+  // src/renderer.js 의 테마는 다크/라이트 둘뿐이고, 그 파일은 Windows 와 공유라 고칠 수 없다.
+  // 그래서 '시스템' 버튼을 여기서 하나 더 끼워 넣고, 눌리면 renderer 의 기존 버튼을
+  // 대신 눌러준다. renderer 입장에서는 사용자가 다크/라이트를 고른 것과 똑같아
+  // 저장·적용 경로가 하나로 유지된다.
+  const THEME_MODE_KEY = 'macThemeMode';          // 'system' | 'manual'
+  let applyingSystem = false;                     // 프로그램이 누른 클릭을 사용자 선택으로 오해하지 않도록
+
+  const themeMode = () => { try { return localStorage.getItem(THEME_MODE_KEY) || 'manual'; } catch { return 'manual'; } };
+  const setThemeMode = (v) => { try { localStorage.setItem(THEME_MODE_KEY, v); } catch {} };
+  const systemTheme = () => (window.__MAC_APPEARANCE === 'light' ? 'light' : 'dark');
+
+  function markSystemActive() {
+    document.querySelectorAll('.theme-btn').forEach((b) => b.classList.remove('active'));
+    const s = document.getElementById('macThemeSystem');
+    if (s) s.classList.add('active');
+  }
+
+  function applySystemTheme() {
+    const btn = document.querySelector(`.theme-btn[data-theme="${systemTheme()}"]`);
+    if (!btn) return;
+    applyingSystem = true;
+    btn.click();               // renderer 가 적용하고 저장한다
+    applyingSystem = false;
+    markSystemActive();        // 눌린 표시는 '시스템' 쪽에 남긴다
+  }
+
+  function installThemeSystemButton() {
+    const light = document.getElementById('themeLight');
+    if (!light || document.getElementById('macThemeSystem')) return;
+
+    const b = document.createElement('button');
+    b.className = 'theme-btn';
+    b.id = 'macThemeSystem';
+    // data-theme 은 일부러 비워둔다. renderer 의 applyTheme() 은 'system' 을 모르고
+    // 모르는 값이 오면 다크로 떨어뜨린다.
+    b.dataset.macTheme = 'system';
+    light.after(b);
+    b.addEventListener('click', () => { setThemeMode('system'); applySystemTheme(); });
+
+    // 사용자가 다크/라이트를 직접 고르면 자동 추종을 끈다
+    document.querySelectorAll('.theme-btn[data-theme]').forEach((x) => {
+      x.addEventListener('click', () => { if (!applyingSystem) setThemeMode('manual'); });
+    });
+
+    labelThemeSystem();
+    if (themeMode() === 'system') applySystemTheme();
+  }
+
+  function labelThemeSystem() {
+    const b = document.getElementById('macThemeSystem');
+    if (!b) return;
+    let lang = 'en';
+    try { lang = (JSON.parse(localStorage.getItem('claudeWidgetSettings')) || {}).lang || 'en'; } catch {}
+    // '시스템'/'System' 은 영어에서 320px 폭을 넘겨 줄바꿈됐다(실측 offsetTop 73,73,100).
+    // 다크·라이트 옆에 붙는 세 번째 칸이라 짧아야 한다.
+    b.textContent = lang === 'ko' ? '자동' : 'Auto';
+    b.title = lang === 'ko' ? '시스템 설정에 맞춤' : 'Follow system setting';
+  }
+
+  // 네이티브가 시스템 외관 변경을 알려준다
+  window.__macAppearanceChanged = (t) => {
+    window.__MAC_APPEARANCE = t;
+    if (themeMode() === 'system') applySystemTheme();
+  };
+
+  // renderer 가 DOMContentLoaded 에서 버튼들에 핸들러를 붙인 뒤에 끼워야 한다.
+  // bridge 가 먼저 등록되므로 한 틱 미룬다.
+  document.addEventListener('DOMContentLoaded', () => setTimeout(installThemeSystemButton, 0));
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.closest && e.target.closest('.lang-btn')) setTimeout(labelThemeSystem, 0);
   }, true);
 
   // ── 5) 창 드래그

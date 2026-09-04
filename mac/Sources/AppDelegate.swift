@@ -1,5 +1,6 @@
 import AppKit
 import WebKit
+import Carbon.HIToolbox   // 전역 단축키 keyCode 상수
 
 // src/main.js 의 WINDOW_MODES 와 같은 값이어야 한다.
 struct WindowMode {
@@ -33,7 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var revivePrewarmed = false
     private var uiLang = "en"
     static var sheetDumped = false
+    static var selfTested = false
     private var lastHoverInside: Bool?
+    /// 시스템 다크/라이트가 바뀌는 걸 지켜본다. 해제하려면 보관해야 한다.
+    private var appearanceObs: NSKeyValueObservation?
 
     // 창 드래그 (Electron 의 -webkit-app-region: drag 대체)
     private var dragMonitors: [Any] = []
@@ -51,6 +55,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         buildPanel()
         buildStatusItem()
         startHoverWatch()
+        startAppearanceWatch()
+        HotKeyCenter.shared.onFire = { [weak self] in self?.toggleByHotKey() }
+        HotKeyCenter.shared.reload()
         // 상태아이템이 메뉴바에 자리를 잡은 뒤에 띄워야 위치가 맞는다.
         waitForStatusItemThenShow()
     }
@@ -83,6 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             }
             prelude = "window.__DRAG_SEL=\(enc(r.drag))[0];window.__NODRAG_SEL=\(enc(r.noDrag))[0];"
         }
+        // 시스템 테마 추종용. 화면이 그려지기 전에 알려줘야 처음부터 맞는 색으로 뜬다.
+        prelude += "window.__MAC_APPEARANCE='\(AppDelegate.systemAppearance())';"
         if let js = Bundle.main.url(forResource: "bridge", withExtension: "js"),
            let src = try? String(contentsOf: js, encoding: .utf8) {
             ucc.addUserScript(WKUserScript(source: prelude + src, injectionTime: .atDocumentStart,
@@ -276,9 +285,148 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         t.state = alwaysOnTop ? .on : .off
         t.target = self
         m.addItem(t)
+
+        m.addItem(.separator())
+
+        let pct = NSMenuItem(title: L("메뉴바에 % 표시", "Show % in menu bar"),
+                             action: #selector(menuTogglePercent), keyEquivalent: "")
+        pct.state = Prefs.showPercent ? .on : .off
+        pct.target = self
+        m.addItem(pct)
+
+        let login = NSMenuItem(title: L("로그인 시 자동 시작", "Start at login"),
+                               action: #selector(menuToggleLogin), keyEquivalent: "")
+        login.state = LaunchAtLogin.isEnabled ? .on : .off
+        // 등록은 됐는데 시스템 설정에서 꺼둔 상태. 사용자가 왜 안 되는지 알 수 있어야 한다.
+        if LaunchAtLogin.needsApproval {
+            login.title += L(" (시스템 설정에서 허용 필요)", " (needs approval in Settings)")
+        }
+        login.target = self
+        m.addItem(login)
+
+        m.addItem(hotKeyMenuItem())
+
         m.addItem(.separator())
         m.addItem(withTitle: L("종료", "Quit"), action: #selector(menuQuit), keyEquivalent: "q").target = self
         return m
+    }
+
+    /// 단축키 하위 메뉴. 자주 쓰는 조합 몇 개 + 직접 지정.
+    private func hotKeyMenuItem() -> NSMenuItem {
+        let cur = Prefs.hotKeyDisabled ? L("사용 안 함", "Off") : Prefs.hotKeyLabel
+        let root = NSMenuItem(title: L("단축키", "Shortcut") + "  (\(cur))", action: nil, keyEquivalent: "")
+        let sub = NSMenu()
+
+        // (표시, keyCode, Carbon 수정키)
+        let presets: [(String, UInt32, UInt32)] = [
+            ("⌃⌥C",  UInt32(kVK_ANSI_C),  UInt32(controlKey | optionKey)),
+            ("⌃⌥U",  UInt32(kVK_ANSI_U),  UInt32(controlKey | optionKey)),
+            ("⌘⇧U",  UInt32(kVK_ANSI_U),  UInt32(cmdKey | shiftKey)),
+            ("⌥Space", UInt32(kVK_Space), UInt32(optionKey)),
+        ]
+        for p in presets {
+            let it = NSMenuItem(title: p.0, action: #selector(menuPickHotKey(_:)), keyEquivalent: "")
+            it.representedObject = [p.1, p.2] as [UInt32]
+            it.state = (!Prefs.hotKeyDisabled && Prefs.hotKeyCode == p.1 && Prefs.hotKeyMods == p.2) ? .on : .off
+            it.target = self
+            sub.addItem(it)
+        }
+        sub.addItem(.separator())
+        sub.addItem(withTitle: L("직접 지정…", "Custom…"),
+                    action: #selector(menuRecordHotKey), keyEquivalent: "").target = self
+        let off = NSMenuItem(title: L("사용 안 함", "Off"),
+                             action: #selector(menuDisableHotKey), keyEquivalent: "")
+        off.state = Prefs.hotKeyDisabled ? .on : .off
+        off.target = self
+        sub.addItem(off)
+
+        // 다른 앱이 같은 조합을 선점하면 등록이 조용히 실패한다. 그걸 메뉴에서 알린다.
+        if !Prefs.hotKeyDisabled && !HotKeyCenter.shared.isActive {
+            sub.addItem(.separator())
+            let warn = NSMenuItem(title: L("다른 앱이 쓰는 중 — 다른 조합을 고르세요",
+                                           "In use by another app — pick another"),
+                                  action: nil, keyEquivalent: "")
+            warn.isEnabled = false
+            sub.addItem(warn)
+        }
+        root.submenu = sub
+        return root
+    }
+
+    @objc private func menuTogglePercent() {
+        Prefs.showPercent.toggle()
+        applyPercentTitle()
+        Dbg.log("메뉴바 % 표시 \(Prefs.showPercent)")
+    }
+
+    @objc private func menuToggleLogin() {
+        let want = !LaunchAtLogin.isEnabled
+        if !LaunchAtLogin.set(want) {
+            // 실패 이유가 대개 앱 위치라서 그것만 알려준다.
+            let a = NSAlert()
+            a.messageText = L("자동 시작을 켤 수 없습니다", "Couldn't enable start at login")
+            a.informativeText = L("앱을 응용 프로그램 폴더로 옮긴 뒤 다시 시도해주세요.",
+                                  "Move the app to Applications and try again.")
+            a.alertStyle = .warning
+            NSApp.activate(ignoringOtherApps: true)
+            a.runModal()
+        }
+    }
+
+    @objc private func menuPickHotKey(_ sender: NSMenuItem) {
+        guard let v = sender.representedObject as? [UInt32], v.count == 2 else { return }
+        Prefs.hotKeyCode = v[0]
+        Prefs.hotKeyMods = v[1]
+        Prefs.hotKeyLabel = sender.title
+        Prefs.hotKeyDisabled = false
+        HotKeyCenter.shared.reload()
+    }
+
+    @objc private func menuRecordHotKey() {
+        HotKeyRecorder.show(korean: uiLang == "ko") {}
+    }
+
+    @objc private func menuDisableHotKey() {
+        Prefs.hotKeyDisabled = true
+        HotKeyCenter.shared.reload()
+    }
+
+    /// 단축키로 열 때는 사용자가 직접 부른 것이므로 앱을 활성화한다.
+    private func toggleByHotKey() {
+        Dbg.log("단축키 발동")
+        panel.isVisible ? hidePanel() : showPanel(userInitiated: true)
+    }
+
+    /// % 숫자 표시. 끄면 캐릭터만 남는다.
+    private func applyPercentTitle() {
+        guard previewTask == nil || previewTask!.isCancelled else { return }
+        statusItem.button?.title = Prefs.showPercent ? " \(Int(lastPercent.rounded()))%" : ""
+    }
+
+    // MARK: - 시스템 테마 추종
+
+    static func systemAppearance() -> String {
+        NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "dark" : "light"
+    }
+
+    /// 시스템 설정에서 다크/라이트를 바꾸면 위젯도 따라가야 한다.
+    /// 따라갈지 말지는 위젯 화면의 '시스템' 버튼(bridge.js)이 정한다 — 여기서는 알리기만 한다.
+    private func startAppearanceWatch() {
+        appearanceObs = NSApp.observe(\.effectiveAppearance) { _, _ in
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let d = NSApp.delegate as? AppDelegate else { return }
+                    d.pushAppearance()
+                }
+            }
+        }
+    }
+
+    private func pushAppearance() {
+        let a = AppDelegate.systemAppearance()
+        Dbg.log("시스템 외관 -> \(a)")
+        let js = "window.__macAppearanceChanged && window.__macAppearanceChanged('\(a)')"
+        Task { _ = try? await web.evaluateJavaScript(js) }
     }
 
     @objc private func menuOpen() { showPanel(userInitiated: true) }
@@ -341,7 +489,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             // 실제 상태로 되돌린다. previewTask 를 먼저 비워야 갱신이 다시 통과한다.
             previewTask = nil
             lastTier = ""
-            statusItem.button?.title = " \(Int(lastPercent.rounded()))%"
+            applyPercentTitle()
             await updateStatusIcon(lastPercent)
         }
     }
@@ -354,7 +502,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         lastPercent = p
         // 미리보기 중에는 화면을 뺏지 않는다
         guard previewTask == nil || previewTask!.isCancelled else { return }
-        statusItem.button?.title = " \(Int(p.rounded()))%"
+        applyPercentTitle()
         Task { await self.updateStatusIcon(p) }
     }
 
@@ -389,7 +537,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             revivePrewarmed = true
             Task { await self.charIcon?.prewarmRevive() }
         }
-        if Dbg.enabled { await dumpFrameSheet() }
+        if Dbg.enabled {
+            await dumpFrameSheet()
+            if !AppDelegate.selfTested { AppDelegate.selfTested = true; await selfTest() }
+        }
     }
 
     /// 히든 연출: 부활을 한 번만 재생하고 평소 상태로 돌아간다.
@@ -573,10 +724,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             let api = try? await w.evaluateJavaScript("typeof window.widgetAPI")
             let minHidden = try? await w.evaluateJavaScript(
                 "(() => { const b = document.querySelector('#minBtn'); return b ? getComputedStyle(b).display : 'no-elem' })()")
-            Dbg.log("DOM=\(n ?? "?") widgetAPI=\(api ?? "?") #minBtn.display=\(minHidden ?? "?")")
+            // 주입한 '시스템' 테마 버튼은 renderer 초기화 뒤에 붙으므로 한 틱 뒤에 확인한다
+            try? await Task.sleep(for: .milliseconds(120))
+            let sysBtn = try? await w.evaluateJavaScript(
+                "(() => { const b = document.querySelector('#macThemeSystem'); return b ? b.textContent + '/' + (b.classList.contains('active') ? 'active' : 'off') : 'none' })()")
+            Dbg.log("DOM=\(n ?? "?") widgetAPI=\(api ?? "?") #minBtn.display=\(minHidden ?? "?") 시스템테마버튼=\(sysBtn ?? "?")")
+            Dbg.log("자동시작=\(LaunchAtLogin.isEnabled) 승인필요=\(LaunchAtLogin.needsApproval) %표시=\(Prefs.showPercent) 단축키=\(Prefs.hotKeyLabel) 활성=\(HotKeyCenter.shared.isActive)")
             await self.snapshot("boot")
         }
     }
+
+    // DebugDump.swift 가 쓰는 통로. private 는 파일 밖에서 보이지 않아 여기서 열어준다.
+    var webView: WKWebView { web }
+    func statusTitle() -> String { statusItem.button?.title ?? "" }
+    func togglePercentForTest() { menuTogglePercent() }
 
     /// 디버그용 화면 캡처. WKWebView 가 자기 자신을 그려서 PNG 로 남긴다.
     func snapshot(_ tag: String) async {
