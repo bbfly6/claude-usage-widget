@@ -56,6 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         buildStatusItem()
         startHoverWatch()
         startAppearanceWatch()
+        // 이미 허용해 둔 사용자라면 묻지 않고 바로 쓸 수 있어야 한다. 상태만 읽는다.
+        Task { await Notifications.refreshAuthorization() }
         HotKeyCenter.shared.onFire = { [weak self] in self?.toggleByHotKey() }
         HotKeyCenter.shared.reload()
         // 상태아이템이 메뉴바에 자리를 잡은 뒤에 띄워야 위치가 맞는다.
@@ -276,119 +278,90 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private func buildMenu() -> NSMenu {
         let m = NSMenu()
         m.addItem(withTitle: L("열기", "Open"), action: #selector(menuOpen), keyEquivalent: "").target = self
-        m.addItem(withTitle: L("캐릭터 전체 보기", "All characters"),
-                  action: #selector(menuPreviewAll), keyEquivalent: "").target = self
-        m.addItem(withTitle: L("메뉴바에서 순서대로", "Play in menu bar"),
-                  action: #selector(menuPreview), keyEquivalent: "").target = self
-        let t = NSMenuItem(title: L("항상 최상단", "Always on top"),
-                           action: #selector(menuToggleTop), keyEquivalent: "")
-        t.state = alwaysOnTop ? .on : .off
-        t.target = self
-        m.addItem(t)
-
-        m.addItem(.separator())
-
-        let pct = NSMenuItem(title: L("메뉴바에 % 표시", "Show % in menu bar"),
-                             action: #selector(menuTogglePercent), keyEquivalent: "")
-        pct.state = Prefs.showPercent ? .on : .off
-        pct.target = self
-        m.addItem(pct)
-
-        let login = NSMenuItem(title: L("로그인 시 자동 시작", "Start at login"),
-                               action: #selector(menuToggleLogin), keyEquivalent: "")
-        login.state = LaunchAtLogin.isEnabled ? .on : .off
-        // 등록은 됐는데 시스템 설정에서 꺼둔 상태. 사용자가 왜 안 되는지 알 수 있어야 한다.
-        if LaunchAtLogin.needsApproval {
-            login.title += L(" (시스템 설정에서 허용 필요)", " (needs approval in Settings)")
-        }
-        login.target = self
-        m.addItem(login)
-
-        m.addItem(hotKeyMenuItem())
-
         m.addItem(.separator())
         m.addItem(withTitle: L("종료", "Quit"), action: #selector(menuQuit), keyEquivalent: "q").target = self
         return m
     }
 
-    /// 단축키 하위 메뉴. 자주 쓰는 조합 몇 개 + 직접 지정.
-    private func hotKeyMenuItem() -> NSMenuItem {
-        let cur = Prefs.hotKeyDisabled ? L("사용 안 함", "Off") : Prefs.hotKeyLabel
-        let root = NSMenuItem(title: L("단축키", "Shortcut") + "  (\(cur))", action: nil, keyEquivalent: "")
-        let sub = NSMenu()
-
-        // (표시, keyCode, Carbon 수정키)
-        let presets: [(String, UInt32, UInt32)] = [
-            ("⌃⌥C",  UInt32(kVK_ANSI_C),  UInt32(controlKey | optionKey)),
-            ("⌃⌥U",  UInt32(kVK_ANSI_U),  UInt32(controlKey | optionKey)),
-            ("⌘⇧U",  UInt32(kVK_ANSI_U),  UInt32(cmdKey | shiftKey)),
-            ("⌥Space", UInt32(kVK_Space), UInt32(optionKey)),
-        ]
-        for p in presets {
-            let it = NSMenuItem(title: p.0, action: #selector(menuPickHotKey(_:)), keyEquivalent: "")
-            it.representedObject = [p.1, p.2] as [UInt32]
-            it.state = (!Prefs.hotKeyDisabled && Prefs.hotKeyCode == p.1 && Prefs.hotKeyMods == p.2) ? .on : .off
-            it.target = self
-            sub.addItem(it)
-        }
-        sub.addItem(.separator())
-        sub.addItem(withTitle: L("직접 지정…", "Custom…"),
-                    action: #selector(menuRecordHotKey), keyEquivalent: "").target = self
-        let off = NSMenuItem(title: L("사용 안 함", "Off"),
-                             action: #selector(menuDisableHotKey), keyEquivalent: "")
-        off.state = Prefs.hotKeyDisabled ? .on : .off
-        off.target = self
-        sub.addItem(off)
-
-        // 다른 앱이 같은 조합을 선점하면 등록이 조용히 실패한다. 그걸 메뉴에서 알린다.
-        if !Prefs.hotKeyDisabled && !HotKeyCenter.shared.isActive {
-            sub.addItem(.separator())
-            let warn = NSMenuItem(title: L("다른 앱이 쓰는 중 — 다른 조합을 고르세요",
-                                           "In use by another app — pick another"),
-                                  action: nil, keyEquivalent: "")
-            warn.isEnabled = false
-            sub.addItem(warn)
-        }
-        root.submenu = sub
-        return root
-    }
-
-    @objc private func menuTogglePercent() {
+    private func togglePercent() {
         Prefs.showPercent.toggle()
         applyPercentTitle()
         Dbg.log("메뉴바 % 표시 \(Prefs.showPercent)")
     }
 
-    @objc private func menuToggleLogin() {
-        let want = !LaunchAtLogin.isEnabled
-        if !LaunchAtLogin.set(want) {
-            // 실패 이유가 대개 앱 위치라서 그것만 알려준다.
+    /// 켤 때 권한을 묻는다. 실행하자마자 묻으면 사용자가 무엇을 허용하는지 모르는 채로
+    /// 대화상자를 만나고, 답을 안 하면 '거부'로 굳어 이후 요청이 막힌다 (260904 실측).
+    private func enableNotifications() async {
+        await Notifications.requestIfNeeded()
+        if Notifications.authorized {
+            Prefs.notifyThresholds = true
+            await Notifications.post(
+                title: L("사용량 알림을 켰습니다", "Usage alerts on"),
+                body: L("세션·주간 사용량이 80%, 90% 를 넘으면 알려드립니다.",
+                        "You'll be notified when session or weekly usage passes 80% and 90%."),
+                id: "enabled")
+        } else {
             let a = NSAlert()
-            a.messageText = L("자동 시작을 켤 수 없습니다", "Couldn't enable start at login")
-            a.informativeText = L("앱을 응용 프로그램 폴더로 옮긴 뒤 다시 시도해주세요.",
-                                  "Move the app to Applications and try again.")
+            a.messageText = L("알림이 허용되지 않았습니다", "Notifications not allowed")
+            a.informativeText = L(
+                "시스템 설정 > 알림 에서 이 앱의 알림을 켜주세요.",
+                "Turn on notifications for this app in System Settings > Notifications.")
             a.alertStyle = .warning
+            a.addButton(withTitle: L("시스템 설정 열기", "Open Settings"))
+            a.addButton(withTitle: L("닫기", "Close"))
             NSApp.activate(ignoringOtherApps: true)
-            a.runModal()
+            if a.runModal() == .alertFirstButtonReturn,
+               let u = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
+                NSWorkspace.shared.open(u)
+            }
         }
     }
 
-    @objc private func menuPickHotKey(_ sender: NSMenuItem) {
-        guard let v = sender.representedObject as? [UInt32], v.count == 2 else { return }
-        Prefs.hotKeyCode = v[0]
-        Prefs.hotKeyMods = v[1]
-        Prefs.hotKeyLabel = sender.title
-        Prefs.hotKeyDisabled = false
-        HotKeyCenter.shared.reload()
+    /// 자동 시작 실패는 대개 앱 위치 문제라서 그것만 알려준다.
+    private func warnLoginFailed() {
+        let a = NSAlert()
+        a.messageText = L("자동 시작을 켤 수 없습니다", "Couldn't enable start at login")
+        a.informativeText = L("앱을 응용 프로그램 폴더로 옮긴 뒤 다시 시도해주세요.",
+                              "Move the app to Applications and try again.")
+        a.alertStyle = .warning
+        NSApp.activate(ignoringOtherApps: true)
+        a.runModal()
     }
 
-    @objc private func menuRecordHotKey() {
-        HotKeyRecorder.show(korean: uiLang == "ko") {}
+    // MARK: - 위젯 창이 그리는 맥 전용 설정
+    // 원래 우클릭 메뉴에 있던 것들. 설정이 두 군데로 나뉘면 사용자는 우클릭을 시도하지 않아
+    // 그런 기능이 있는 줄도 모른다 (260904 Roy 지적).
+
+    private func macSettingsDict() -> [String: Any] {
+        [
+            "notify":  Prefs.notifyThresholds && Notifications.authorized,
+            "percent": Prefs.showPercent,
+            "login":   LaunchAtLogin.isEnabled,
+            "hotkey":  Prefs.hotKeyDisabled ? L("사용 안 함", "Off") : Prefs.hotKeyLabel,
+        ]
     }
 
-    @objc private func menuDisableHotKey() {
-        Prefs.hotKeyDisabled = true
-        HotKeyCenter.shared.reload()
+    /// 네이티브 쪽에서 값이 바뀌었을 때(단축키 녹화 등) 창을 다시 그리게 한다.
+    func pushMacSettings() {
+        guard let d = try? JSONSerialization.data(withJSONObject: macSettingsDict()),
+              let j = String(data: d, encoding: .utf8) else { return }
+        Task { _ = try? await web.evaluateJavaScript(
+            "window.__macSettingsChanged && window.__macSettingsChanged(\(j))") }
+    }
+
+    /// 요청대로 안 되는 경우(권한 거부·앱 위치)가 있어 **실제** 상태를 돌려준다.
+    private func setMacSetting(_ key: String, _ on: Bool) async -> [String: Any] {
+        switch key {
+        case "percent":
+            Prefs.showPercent = on
+            applyPercentTitle()
+        case "login":
+            if !LaunchAtLogin.set(on) { warnLoginFailed() }
+        case "notify":
+            if on { await enableNotifications() } else { Prefs.notifyThresholds = false }
+        default: break
+        }
+        return macSettingsDict()
     }
 
     /// 단축키로 열 때는 사용자가 직접 부른 것이므로 앱을 활성화한다.
@@ -494,7 +467,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         }
     }
     @objc private func menuQuit() { NSApp.terminate(nil) }
-    @objc private func menuToggleTop() { _ = setAlwaysOnTop(!alwaysOnTop) }
 
     /// 메뉴바에 현재 세션 사용률을 캐릭터 + 숫자로 표시한다.
     private func updateStatusTitle(_ usage: [String: Any]) {
@@ -504,6 +476,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         guard previewTask == nil || previewTask!.isCancelled else { return }
         applyPercentTitle()
         Task { await self.updateStatusIcon(p) }
+        // 세션과 주간을 따로 본다. 주간이 90% 인 게 세션 90% 보다 아플 때가 많다.
+        let weekly = usage["weeklyAllModelsPercent"] as? Double
+        let ko = uiLang == "ko"
+        Task { @MainActor in
+            await Notifications.checkThresholds(kind: "session",
+                                                label: ko ? "현재 세션" : "Current session",
+                                                percent: p, korean: ko)
+            if let w = weekly {
+                await Notifications.checkThresholds(kind: "weekly",
+                                                    label: ko ? "주간 사용량" : "Weekly usage",
+                                                    percent: w, korean: ko)
+            }
+        }
     }
 
     /// 캐릭터 아이콘 갱신.
@@ -709,6 +694,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             case "setLang":
                 self.uiLang = (args.first as? String) == "ko" ? "ko" : "en"
                 replyHandler(nil, nil)
+            case "macSettings":
+                replyHandler(self.macSettingsDict(), nil)
+            case "setMac":
+                let key = args.first as? String ?? ""
+                let on = (args.count > 1 ? args[1] as? Bool : false) ?? false
+                replyHandler(await self.setMacSetting(key, on), nil)
+            case "pickHotKey":
+                HotKeyRecorder.show(korean: self.uiLang == "ko") { [weak self] in
+                    self?.pushMacSettings()
+                }
+                replyHandler(nil, nil)
+            case "previewAll":
+                self.menuPreviewAll(); replyHandler(nil, nil)
+            case "previewMenuBar":
+                self.menuPreview(); replyHandler(nil, nil)
             case "dragStart":
                 self.beginDrag(); replyHandler(nil, nil)
             default:
@@ -737,7 +737,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     // DebugDump.swift 가 쓰는 통로. private 는 파일 밖에서 보이지 않아 여기서 열어준다.
     var webView: WKWebView { web }
     func statusTitle() -> String { statusItem.button?.title ?? "" }
-    func togglePercentForTest() { menuTogglePercent() }
+    func togglePercentForTest() { togglePercent() }
+    func menuTitlesForTest() -> [String] { buildMenu().items.map(\.title) }
 
     /// 디버그용 화면 캡처. WKWebView 가 자기 자신을 그려서 PNG 로 남긴다.
     func snapshot(_ tag: String) async {

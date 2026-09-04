@@ -74,6 +74,7 @@
        라벨을 '자동/Auto' 로 줄여도 여전히 넘쳐서(실측 offsetTop 73,73,100)
        좌우 여백까지 줄인다. 세로 여백은 그대로라 다른 버튼과 높이는 같다. */
     '.theme-btn { padding-left: 7px !important; padding-right: 7px !important; }',
+    '.mac-links { display: flex; gap: 14px; margin-bottom: 10px; }',
 
     'button:disabled, button:disabled *, .login-btn:disabled, .login-btn:disabled * { cursor: default !important; }',
   ].join('\n');
@@ -162,10 +163,126 @@
 
   // renderer 가 DOMContentLoaded 에서 버튼들에 핸들러를 붙인 뒤에 끼워야 한다.
   // bridge 가 먼저 등록되므로 한 틱 미룬다.
-  document.addEventListener('DOMContentLoaded', () => setTimeout(installThemeSystemButton, 0));
+  document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
+    installThemeSystemButton();
+    installMacSettings();
+  }, 0));
   document.addEventListener('click', (e) => {
-    if (e.target && e.target.closest && e.target.closest('.lang-btn')) setTimeout(labelThemeSystem, 0);
+    if (e.target && e.target.closest && e.target.closest('.lang-btn')) {
+      setTimeout(async () => {
+        labelThemeSystem();
+        renderMacSettings(await call('macSettings'));   // 라벨을 새 언어로 다시 그린다
+      }, 0);
+    }
   }, true);
+
+  // ── 7) 맥 전용 설정을 설정 창 안으로
+  //
+  // 이 항목들은 원래 메뉴바 우클릭 메뉴에 있었다. 설정이 두 군데로 나뉘면
+  // 사용자는 우클릭을 시도하지 않아 그런 기능이 있는 줄도 모른다.
+  // 우클릭에는 '열기/종료'만 남기고 설정은 전부 이 창으로 모은다.
+  const MAC_L = {
+    ko: { notify: '사용량 알림', percent: '메뉴바 % 표시', login: '로그인 시 자동 시작',
+          hotkey: '단축키', off: '끔', on: '켬',
+          previewAll: '캐릭터 전체 보기 →', previewBar: '메뉴바에서 재생 →' },
+    en: { notify: 'Usage alerts', percent: 'Menu bar %', login: 'Start at login',
+          hotkey: 'Shortcut', off: 'Off', on: 'On',
+          previewAll: 'All characters →', previewBar: 'Play in menu bar →' },
+  };
+  const macLang = () => {
+    try { return (JSON.parse(localStorage.getItem('claudeWidgetSettings')) || {}).lang === 'ko' ? 'ko' : 'en'; }
+    catch { return 'en'; }
+  };
+
+  /// 맥 전용 버튼 스타일.
+  ///
+  /// 원래는 style.css 의 규칙에 선택자만 얹어(cssRules 수정) 값을 베끼지 않으려 했는데,
+  /// file:// 에서 로드한 스타일시트는 cssRules 접근이 SecurityError 로 막힌다 (260904 실측).
+  /// 그래서 어쩔 수 없이 여기 적는다. 색은 같은 토큰을 쓰므로 테마는 함께 따라가고,
+  /// 치수만 중복된다. 원본은 style.css 의 .theme-btn/.mode-btn/.ontop-btn 규칙이다.
+  function macButtonStyles() {
+    const css = document.createElement('style');
+    css.textContent = `
+      .mac-seg-btn {
+        font-size: 11px; padding: 4px 10px;
+        border: 1px solid var(--border); border-radius: 6px;
+        background: transparent; color: var(--text-secondary); cursor: pointer;
+        transition: background .15s, color .15s, border-color .15s, transform .1s;
+      }
+      .mac-seg-btn:hover { color: var(--text-primary); border-color: rgba(217,119,87,.35); }
+      .mac-seg-btn:active { transform: scale(.97); }
+      .mac-seg-btn:focus-visible { outline: 2px solid var(--claude-orange); outline-offset: 1px; }
+      .mac-seg-btn.active {
+        color: var(--claude-orange); background: rgba(217,119,87,.1);
+        border-color: rgba(217,119,87,.3); font-weight: 600;
+      }
+      .mac-link { font-size: 10px; color: var(--claude-orange); text-decoration: none; cursor: pointer; }
+      .mac-link:hover { text-decoration: underline; }
+    `;
+    document.head.appendChild(css);
+  }
+
+  function segGroup(key, label, on) {
+    const t = MAC_L[macLang()];
+    return `<div class="settings-group">
+      <label class="settings-label" data-mac-label="${key}">${label}</label>
+      <div class="seg-buttons">
+        <button class="mac-seg-btn${on ? '' : ' active'}" data-mac="${key}" data-val="0">${t.off}</button>
+        <button class="mac-seg-btn${on ? ' active' : ''}" data-mac="${key}" data-val="1">${t.on}</button>
+      </div>
+    </div>`;
+  }
+
+  function renderMacSettings(st) {
+    const t = MAC_L[macLang()];
+    const host = document.getElementById('macSettings');
+    if (!host) return;
+    host.innerHTML = `
+      <div class="settings-row">
+        ${segGroup('notify', t.notify, st.notify)}
+        ${segGroup('percent', t.percent, st.percent)}
+      </div>
+      <div class="settings-row">
+        ${segGroup('login', t.login, st.login)}
+        <div class="settings-group">
+          <label class="settings-label">${t.hotkey}</label>
+          <div class="seg-buttons">
+            <button class="mac-seg-btn active" id="macHotkey">${st.hotkey}</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group mac-links">
+        <a class="mac-link" id="macPreviewAll">${t.previewAll}</a>
+        <a class="mac-link" id="macPreviewBar">${t.previewBar}</a>
+      </div>`;
+
+    host.querySelectorAll('.mac-seg-btn[data-mac]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const next = await call('setMac', [b.dataset.mac, b.dataset.val === '1']);
+        renderMacSettings(next);          // 네이티브가 돌려준 실제 상태로 그린다
+      });                                 // (권한 거부처럼 요청대로 안 되는 경우가 있다)
+    });
+    document.getElementById('macHotkey').addEventListener('click', () => call('pickHotKey'));
+    document.getElementById('macPreviewAll').addEventListener('click', () => call('previewAll'));
+    document.getElementById('macPreviewBar').addEventListener('click', () => call('previewMenuBar'));
+  }
+
+  // 네이티브가 상태를 바꿨을 때(단축키 녹화 등) 화면을 다시 그린다
+  window.__macSettingsChanged = (st) => renderMacSettings(st);
+
+  async function installMacSettings() {
+    const panel = document.getElementById('settingsPanel');
+    if (!panel || document.getElementById('macSettings')) return;
+    macButtonStyles();
+    const host = document.createElement('div');
+    host.id = 'macSettings';
+    // '인증 정보' **앞**에 넣는다. 인증 정보는 설정이 아니라 상태 표시라
+    // 설정 항목들 사이에 끼면 흐름이 끊긴다.
+    const cred = document.getElementById('labelCredentials');
+    const before = (cred && cred.closest('.settings-group')) || panel.querySelector('.divider');
+    before ? panel.insertBefore(host, before) : panel.appendChild(host);
+    renderMacSettings(await call('macSettings'));
+  }
 
   // ── 5) 창 드래그
   // WKWebView 는 -webkit-app-region 을 창 이동으로 해석하지 않는다 (Electron 전용 동작).

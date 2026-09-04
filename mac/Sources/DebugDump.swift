@@ -82,6 +82,38 @@ extension AppDelegate {
         _ = try? await webView.evaluateJavaScript("document.querySelector('#settingsBtn').click()")
         try? await Task.sleep(for: .milliseconds(300))
         await snapshot("settings")
+        let sizes = try? await webView.evaluateJavaScript("""
+        (() => {
+          const p = document.querySelector('#settingsPanel');
+          const c = document.querySelector('.content');
+          const g = document.querySelector('.settings-group');
+          return `패널=${p.offsetHeight} 콘텐츠=${c.offsetHeight} 창=${window.innerHeight} 그룹1개=${g.offsetHeight}`;
+        })()
+        """)
+        Dbg.log("[측정] 설정패널 \(sizes ?? "?")")
+        // 맥 전용 설정이 창 안에 제대로 들어갔는지
+        let mac = try? await webView.evaluateJavaScript("""
+        (() => {
+          const h = document.querySelector('#macSettings');
+          if (!h) return 'none';
+          const b = [...h.querySelectorAll('.mac-seg-btn')].map(x => x.textContent.trim() + (x.classList.contains('active') ? '*' : ''));
+          const l = [...h.querySelectorAll('.mac-link')].map(x => x.textContent.trim());
+          const styled = getComputedStyle(h.querySelector('.mac-seg-btn')).borderRadius;
+          return `버튼=${b.join(' ')} 링크=${l.join(' ')} 모서리=${styled} 높이=${h.offsetHeight}`;
+        })()
+        """)
+        Dbg.log("[검증] 맥설정 \(mac ?? "?")")
+
+        // 창에서 누른 것이 실제로 네이티브에 닿는지 — % 표시를 창에서 껐다 켠다
+        _ = try? await webView.evaluateJavaScript(
+            "document.querySelector('.mac-seg-btn[data-mac=\"percent\"][data-val=\"0\"]').click()")
+        try? await Task.sleep(for: .milliseconds(400))
+        let offTitle = statusTitle()
+        _ = try? await webView.evaluateJavaScript(
+            "document.querySelector('.mac-seg-btn[data-mac=\"percent\"][data-val=\"1\"]').click()")
+        try? await Task.sleep(for: .milliseconds(400))
+        Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
+        Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
         // 테마 버튼 3개가 한 줄에 앉는지 — 한국어/영어 둘 다 본다.
         // offsetTop 이 전부 같으면 한 줄이다.
         let rowCheck = """
@@ -103,6 +135,22 @@ extension AppDelegate {
         _ = try? await webView.evaluateJavaScript(
             "document.querySelector('.lang-btn[data-lang=\"\(langBefore)\"]').click()")
         _ = try? await webView.evaluateJavaScript("document.querySelector('#settingsBtn').click()")
+
+        // 5) 알림 — 권한 상태만 읽는다.
+        //    권한 요청은 사용자가 메뉴에서 켤 때만 한다. 실행할 때 물으면
+        //    무엇을 허용하는지 모르는 채로 대화상자를 만나고, 그때 답을 안 하면
+        //    '거부'로 굳어 이후 요청이 UNErrorDomain Code=1 로 막힌다 (260904 실측).
+        await Notifications.refreshAuthorization()
+        Dbg.log("[검증] 알림 사용가능=\(Notifications.authorized) 켬=\(Prefs.notifyThresholds)")
+        // 임계값 규칙은 권한과 무관하게 검증할 수 있다 — 판정과 발송을 분리해 뒀다.
+        Notifications.resetFired()
+        var trace: [String] = []
+        for p in [70.0, 85, 88, 92, 95, 40, 85] {
+            let d = Notifications.decide(kind: "test", label: "세션", percent: p, korean: true)
+            trace.append("\(Int(p))%->\(d.isEmpty ? "-" : d.map(\.id).joined(separator: "+"))")
+        }
+        Notifications.resetFired()
+        Dbg.log("[검증] 임계값 판정 " + trace.joined(separator: " "))
 
         // 4) 단축키 — 실제 키 입력 없이 등록 상태와 발동 경로만 확인한다
         Dbg.log("[검증] 단축키 \(Prefs.hotKeyLabel) 등록=\(HotKeyCenter.shared.isActive) 콜백연결=\(HotKeyCenter.shared.onFire != nil)")

@@ -14,6 +14,15 @@ enum Prefs {
         set { d.set(newValue, forKey: kPercent) }
     }
 
+    // MARK: 사용량 임계값 알림
+    // 기본은 꺼둔다. 켜는 순간에 권한을 묻는 게 맞다 —
+    // 실행하자마자 묻으면 사용자가 뭘 허용하는지 모르는 채로 대화상자를 만난다.
+    private static let kNotify = "mac.notify.thresholds"
+    static var notifyThresholds: Bool {
+        get { d.bool(forKey: kNotify) }
+        set { d.set(newValue, forKey: kNotify) }
+    }
+
     // MARK: 전역 단축키 — 기본 ⌃⌥C
     // Carbon 은 자기 상수를 쓴다: controlKey 4096 / optionKey 2048 / shiftKey 512 / cmdKey 256.
     // NSEvent.ModifierFlags 값과 다르므로 변환해서 넣어야 한다.
