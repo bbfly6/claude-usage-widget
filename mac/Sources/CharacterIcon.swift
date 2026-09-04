@@ -128,6 +128,23 @@ final class CharacterIcon {
       <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
       <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
     </g>
+    <!-- 90% 초과 전용. 머리 위 불꽃만으로는 ~90% 와 구분이 안 돼서(260904)
+         머리 양옆 빈 공간(x 0~3 / 21~24, y 5~11)까지 불을 번지게 한다.
+         팔이 y 10.95 부터 시작하므로 아래로 더 내리지 않는다. -->
+    <g class="mb-blaze" aria-hidden="true">
+      <g class="mb-blaze-l">
+        <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+        <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+        <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+        <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+      </g>
+      <g class="mb-blaze-r">
+        <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+        <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+        <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+        <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+      </g>
+    </g>
     <g class="mb-sweat" aria-hidden="true">
       <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2"   height="2.7" fill="#8fd0f5"/>
       <rect class="mb-drop mb-drop2" x="2.9"  y="5.2" width="1.8" height="2.4" fill="#8fd0f5"/>
@@ -415,13 +432,26 @@ final class CharacterIcon {
           0%,100% { transform: translateY(0) }
           50%     { transform: translateY(-1.2px) }
         }
-        /* 손은 서로 엇갈려 움직여야 두드리는 것처럼 보인다.
-           SVG 자식의 translate 는 viewBox 단위(=캐릭터 24폭 기준)로 먹는다. */
-          50%     { transform: translateY(0) }
+        /* 90% 초과 — 몸이 달아오른다.
+           filter 의 hue-rotate 만으로는 22pt 에서 ~90% 와 구분이 안 됐다(260904 실측).
+           몸통 path 의 fill 을 실제 붉은색까지 밀어붙인다. */
+        @keyframes mb-overheat {
+          0%   { transform: scale(1);    filter: brightness(1) }
+          100% { transform: scale(1.07); filter: brightness(1.1) }
         }
-        @keyframes mb-overheat {        /* 90% 초과 — 붉게 달아오르고 불꽃이 커진다 */
-          0%   { filter: saturate(1.35) brightness(1.02) hue-rotate(-6deg); transform: scale(1) }
-          100% { filter: saturate(2.1) brightness(1.12) hue-rotate(-14deg); transform: scale(1.06) }
+        @keyframes mb-scorch {          /* #D97757(기본) → 달군 쇠 색 */
+          0%   { fill: #e8583a }
+          100% { fill: #c4160b }
+        }
+        /* 옆불꽃은 좌우가 엇갈려야 '번진다'로 읽힌다.
+           컷 샘플링이 animation-delay 를 덮어쓰므로 시차를 키프레임 안에 넣는다. */
+        @keyframes mb-blaze-a {
+          0%,100% { transform: scaleY(1)    translateY(0);      opacity: .92 }
+          50%     { transform: scaleY(1.32) translateY(-0.5px); opacity: 1 }
+        }
+        @keyframes mb-blaze-b {
+          0%,100% { transform: scaleY(1.28) translateY(-0.4px); opacity: 1 }
+          50%     { transform: scaleY(0.9)  translateY(0);      opacity: .88 }
         }
         /* 음표는 시차가 필요한데 animation-delay 를 쓸 수 없어(컷 샘플링용으로 덮어씀)
            키프레임 안에 시차를 넣은 별도 애니메이션으로 만든다. */
@@ -497,7 +527,7 @@ final class CharacterIcon {
         .char-stage.tier-walk-fast .char-walker { animation: none; }
 
         /* 소품 기본 숨김. 구간별 규칙에서 필요한 것만 켠다. */
-        .mb-shades, .mb-cup, .mb-notes, .mb-sweat, .mb-excl, .mb-hs-p { display: none; }
+        .mb-shades, .mb-cup, .mb-notes, .mb-sweat, .mb-excl, .mb-hs-p, .mb-blaze { display: none; }
         .mb-deskfx { display:none; position:absolute; left:50%; top:50%;
                      width:56px; height:44px; margin-left:-28px; margin-top:-22px;
                      pointer-events:none; overflow:visible; }
@@ -520,10 +550,18 @@ final class CharacterIcon {
         .char-stage.tier-fire .char-body { animation: mb-fire-jump calc(var(--c) / 3) cubic-bezier(0.3,0.1,0.5,1) infinite; }
         .char-stage.tier-fire .char-walker { animation: mb-shake calc(var(--c) / 2) ease-in-out infinite alternate; }
 
-        /* 90% 초과 — 같은 '불' 구간이라도 위험도가 다르다. 불꽃을 키우고 몸을 달군다. */
-        .char-stage.tier-fire-hot .char-flame { transform-origin: 50% 100%; }
+        /* 90% 초과 — 같은 '불' 구간이라도 위험도가 다르다.
+           앞선 버전은 채도·색조 필터만 바꿔서 22pt 에서 ~90% 와 똑같아 보였다(260904).
+           **실루엣**(옆으로 번진 불)과 **색**(몸이 빨개짐)을 같이 바꿔야 한 눈에 갈린다. */
+        .char-stage.tier-fire-hot .mb-blaze { display: block; }
+        .char-stage.tier-fire-hot .mb-blaze-l,
+        .char-stage.tier-fire-hot .mb-blaze-r { transform-box: fill-box; transform-origin: 50% 100%; }
+        .char-stage.tier-fire-hot .mb-blaze-l { animation: mb-blaze-a calc(var(--c) / 4) steps(3, end) infinite; }
+        .char-stage.tier-fire-hot .mb-blaze-r { animation: mb-blaze-b calc(var(--c) / 4) steps(3, end) infinite; }
+        /* 몸통 path 만 겨냥한다 — 감은 눈·십자 눈은 g 안에 있어 영향받지 않는다 */
+        .char-stage.tier-fire-hot .char-svg > path { animation: mb-scorch calc(var(--c) / 2) ease-in-out infinite alternate; }
         .char-stage.tier-fire-hot .char-svg   { animation: mb-overheat calc(var(--c) / 2) ease-in-out infinite alternate; }
-        .char-stage.tier-fire-hot .char-walker { animation: mb-shake calc(var(--c) / 3) ease-in-out infinite alternate; }
+        .char-stage.tier-fire-hot .char-walker { animation: mb-shake calc(var(--c) / 3.5) ease-in-out infinite alternate; }
         .char-stage.tier-fire-hot .char-body   { animation: mb-fire-jump calc(var(--c) / 4) cubic-bezier(0.3,0.1,0.5,1) infinite; }
 
         .char-stage.tier-dead .char-body { animation: none; }
