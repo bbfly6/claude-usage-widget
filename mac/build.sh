@@ -34,6 +34,8 @@ fi
 echo "▸ 리소스 복사 (src/ 원본 공유)"
 cp src/index.html src/style.css src/renderer.js "$APP/Contents/Resources/ui/"
 cp mac/bridge.js "$APP/Contents/Resources/"
+# 아이콘이 없으면 만든다 (mac/make-icon.py). 없어도 빌드는 진행한다.
+[ -f mac/icon.icns ] || python3 mac/make-icon.py >/dev/null 2>&1 || true
 [ -f mac/icon.icns ] && cp mac/icon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 cat > "$APP/Contents/Info.plist" <<PLIST

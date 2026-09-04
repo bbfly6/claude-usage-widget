@@ -30,3 +30,6 @@ Thumbs.db
 
 # mac 빌드 산출물
 mac/dist/
+# 아이콘 중간 산출물 — mac/make-icon.py 로 언제든 다시 만든다. icon.icns 는 커밋한다.
+mac/icon.iconset/
+mac/icon-preview.png
