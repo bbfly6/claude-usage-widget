@@ -301,6 +301,9 @@
   function updateBarStyles() {
     const css = document.createElement('style');
     css.textContent = `
+      /* [hidden] 은 브라우저 기본 스타일이라 클래스 규칙(display:flex)에 진다.
+         명시하지 않으면 새 버전이 없을 때도 빈 띠가 그려진다 (260907 Roy 확인). */
+      .mac-update[hidden] { display: none !important; }
       .mac-update {
         display: flex; align-items: center; gap: 8px;
         margin: 0 16px 10px; padding: 7px 10px;
@@ -331,7 +334,7 @@
     const t = UPD_L[st.lang === 'ko' ? 'ko' : 'en'];
     const show = ['available', 'downloading', 'installing', 'failed'].includes(st.kind);
     host.hidden = !show;
-    if (!show) { host.innerHTML = ''; return; }
+    if (!show) { host.innerHTML = ''; host.className = 'mac-update'; return; }
 
     let msg = '', btn = '', busy = false, bar = '';
     if (st.kind === 'available')    { msg = t.avail(st.version); btn = t.btn; }

@@ -115,6 +115,17 @@ extension AppDelegate {
         Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
         Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
 
+        // 새 버전이 없을 때 띠가 정말 안 보이는지 — 빈 박스가 남은 적이 있다 (260907)
+        let idleBar = try? await webView.evaluateJavaScript("""
+        (() => {
+          const b = document.querySelector('#macUpdate');
+          if (!b) return 'none';
+          const cs = getComputedStyle(b);
+          return `hidden=${b.hidden} display=${cs.display} 높이=${b.offsetHeight}`;
+        })()
+        """)
+        Dbg.log("[검증] 업데이트 없을 때 띠 \(idleBar ?? "?")")
+
         // 업데이트 — CLAUDE_WIDGET_FEED 로 가짜 릴리스를 물려 끝까지 돌려본다.
         // TEST_UPDATE=1 이면 실제로 교체까지 한다 (앱이 재시작된다).
         let env = ProcessInfo.processInfo.environment
