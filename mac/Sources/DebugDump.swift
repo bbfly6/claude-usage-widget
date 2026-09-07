@@ -115,6 +115,34 @@ extension AppDelegate {
         Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
         Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
 
+        // 실제 위젯의 캐릭터 모드 — CHAR_SHOT=1 일 때만
+        if ProcessInfo.processInfo.environment["CLAUDE_WIDGET_CHAR_SHOT"] == "1" {
+            // 앞 단계에서 설정 패널이 열려 있으면 캐릭터가 가려진다
+            _ = try? await webView.evaluateJavaScript("""
+            (() => {
+              const p = document.querySelector('#settingsPanel');
+              if (p && p.style.display !== 'none') document.querySelector('#settingsBtn').click();
+            })()
+            """)
+            try? await Task.sleep(for: .milliseconds(300))
+            _ = try? await webView.evaluateJavaScript(
+                "document.querySelector('.mode-btn[data-mode=\"character\"]').click()")
+            try? await Task.sleep(for: .milliseconds(1200))
+            for t in ["tier-sleep", "tier-walk-slow", "tier-walk-fast", "tier-jump",
+                      "tier-fire", "tier-fire-hot", "tier-dead", "tier-revive"] {
+                _ = try? await webView.evaluateJavaScript("""
+                (() => {
+                  const s = document.querySelector('#charStage');
+                  s.className = 'char-stage ' + '\(t)';
+                })()
+                """)
+                try? await Task.sleep(for: .milliseconds(500))
+                await snapshot("char-\(t)")
+            }
+            _ = try? await webView.evaluateJavaScript(
+                "document.querySelector('.mode-btn[data-mode=\"default\"]').click()")
+        }
+
         // 새 버전이 없을 때 띠가 정말 안 보이는지 — 빈 박스가 남은 적이 있다 (260907)
         let idleBar = try? await webView.evaluateJavaScript("""
         (() => {

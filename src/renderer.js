@@ -179,7 +179,12 @@ async function applyAlwaysOnTop(flag) {
 
 // 사용량 구간별 캐릭터 모션
 // 0~10 잠 · ~30 느린 걷기 · ~50 빠른 걷기 · ~80 점프 · ~100 불붙어 날뛰기 · 100 사망
-const CHAR_TIERS = ['tier-sleep', 'tier-walk-slow', 'tier-walk-fast', 'tier-jump', 'tier-fire', 'tier-dead'];
+const CHAR_TIERS = ['tier-sleep', 'tier-walk-slow', 'tier-walk-fast', 'tier-jump',
+                    'tier-fire', 'tier-fire-hot', 'tier-dead', 'tier-revive'];
+// 부활 연출 길이. style.css 의 .tier-revive 애니메이션과 같아야 한다.
+const REVIVE_MS = 2300;
+let revivePrev = -1;      // 직전 사용률 — 초기화 시점을 잡으려고 들고 있는다
+let reviveUntil = 0;      // 연출이 끝나는 시각. 그때까지는 구간을 바꾸지 않는다
 
 function charTierFor(percent) {
   // 말풍선에 100% 라고 적혀 있으면 캐릭터도 사망 상태여야 한다 → 표시값과 같은 반올림 기준
@@ -188,7 +193,8 @@ function charTierFor(percent) {
   if (percent <= 30) return 'tier-walk-slow';
   if (percent <= 50) return 'tier-walk-fast';
   if (percent <= 80) return 'tier-jump';
-  return 'tier-fire';
+  if (percent <= 90) return 'tier-fire';
+  return 'tier-fire-hot';
 }
 
 function setCharPercent(percent) {
@@ -199,6 +205,20 @@ function setCharPercent(percent) {
   else if (percent >= 50) el.classList.add('warning');
 
   const stage = $('#charStage');
+  const now = Date.now();
+
+  // 히든: 한도가 초기화돼 0% 로 돌아오는 순간 한 번만 부활한다.
+  // 직전이 1% 이상이었다가 0% 가 되는 때 = 사용량 창이 리셋된 시점.
+  if (now < reviveUntil) return;                     // 연출 중에는 건드리지 않는다
+  if (revivePrev >= 1 && Math.round(percent) === 0) {
+    reviveUntil = now + REVIVE_MS;
+    revivePrev = percent;
+    CHAR_TIERS.forEach((c) => stage.classList.toggle(c, c === 'tier-revive'));
+    setTimeout(() => setCharPercent(percent), REVIVE_MS);
+    return;
+  }
+  revivePrev = percent;
+
   const next = charTierFor(percent);
   CHAR_TIERS.forEach((c) => stage.classList.toggle(c, c === next));
 }

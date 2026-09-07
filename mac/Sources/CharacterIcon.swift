@@ -71,86 +71,11 @@ final class CharacterIcon {
     <div class="mb-spot" aria-hidden="true"></div>
     <div class="mb-glow" aria-hidden="true"></div>
     """
-    /// 구간별 소품. 원본 캐릭터에 없는 맥 전용 요소라 여기서 SVG 안에 끼워 넣는다.
-    /// 좌표는 캐릭터 viewBox(24×24) 기준 — 눈은 x 6~7.5 / 16.5~18, y 8.1~10.9 에 있다.
-    /// 구간별 소품. 원본 캐릭터에 없는 맥 전용 요소라 여기서 SVG 안에 끼워 넣는다.
-    ///
-    /// ── 캐릭터 해부 (viewBox 24×24, index.html 의 path 를 뜯어 확인) ──
-    ///   머리·몸통 : x 3~21,  y 5~17.08
-    ///   눈        : x 6~7.5 및 16.5~18,  y 8.1~10.95
-    ///   **팔**     : x 0~3 및 21~24,  y 10.95~14.05  (눈 높이에서 가로로 뻗은 것)
-    ///   **다리**   : y 17.08~20,  x 4.49~6 / 7.49~9 / 15~16.51 / 18~19.49 (네 개)
-    ///
-    /// 주의: 팔은 몸통 path 와 한 덩어리라 따로 움직일 수 없다.
-    ///       그래서 '팔로 타이핑' 같은 연출은 캐릭터를 부위별로 다시 그려야 한다.
-    ///       소품은 머리 위(y<5)나 옆 빈 공간에 두는 편이 22pt 에서 안전하다.
-    private static let propsSVG = """
-    <g class="mb-shades" aria-hidden="true">
-      <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
-      <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
-      <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
-      <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
-      <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
-    </g>
-    <g class="mb-cup" aria-hidden="true">
-      <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
-      <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
-      <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
-      <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
-      <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
-    </g>
-    <g class="mb-notes" aria-hidden="true">
-      <g class="mb-note mb-note1">
-        <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
-        <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
-        <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
-      </g>
-      <g class="mb-note mb-note2">
-        <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
-        <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
-      </g>
-    </g>
-    <!-- 헤드셋 후보. 밴드가 머리에 딱 붙으면 흰머리처럼 읽혀서(260903) 띄우거나 없앤다. -->
-    <g class="mb-hs-p" aria-hidden="true">
-      <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
-      <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
-      <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
-      <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
-      <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
-      <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
-      <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
-      <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
-    </g>
-    <!-- 눈구멍(x 6~7.49 / 16.51~18, y 8.1~10.95) 위쪽을 몸 색으로 덮어 반쯤 감긴 눈을 만든다 -->
-    <g class="mb-excl" aria-hidden="true">
-      <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
-      <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
-      <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
-      <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
-    </g>
-    <!-- 90% 초과 전용. 머리 위 불꽃만으로는 ~90% 와 구분이 안 돼서(260904)
-         머리 양옆 빈 공간(x 0~3 / 21~24, y 5~11)까지 불을 번지게 한다.
-         팔이 y 10.95 부터 시작하므로 아래로 더 내리지 않는다. -->
-    <g class="mb-blaze" aria-hidden="true">
-      <g class="mb-blaze-l">
-        <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
-        <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
-        <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
-        <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
-      </g>
-      <g class="mb-blaze-r">
-        <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
-        <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
-        <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
-        <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
-      </g>
-    </g>
-    <g class="mb-sweat" aria-hidden="true">
-      <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2"   height="2.7" fill="#8fd0f5"/>
-      <rect class="mb-drop mb-drop2" x="2.9"  y="5.2" width="1.8" height="2.4" fill="#8fd0f5"/>
-      <rect class="mb-drop mb-drop3" x="21.5" y="6.4" width="1.6" height="2.1" fill="#8fd0f5"/>
-    </g>
-    """
+    // 구간별 소품(선글라스·커피·음표·헤드셋·느낌표·땀·옆불꽃)은 src/index.html 로 옮겼다.
+    // 좌표가 캐릭터 viewBox(24×24) 기준이라 위젯 창과 메뉴바 아이콘이 같은 그림을 쓴다.
+    // 노트북·날개·빛만 맥 아이콘 전용으로 남는다 — 22pt 에서는 상자(56×44) 기준으로
+    // 크게 그려야 읽히는데, 72px 짜리 위젯 창에서는 그 비율이 맞지 않는다.
+
     private static let wingsSVG = """
     <svg class="mb-wings" viewBox="0 0 36 20" aria-hidden="true">
       <g class="mb-wing mb-wing-l" fill="#ffffff">
@@ -197,7 +122,7 @@ final class CharacterIcon {
         // 캐릭터는 y 5~20 에만 있고 불꽃이 y 0.7 부터 시작한다. 위아래 빈 공간을 잘라낸다.
         body = b
             .replacingOccurrences(of: "viewBox=\"0 0 24 24\"", with: "viewBox=\"0 0.5 24 20\"")
-            .replacingOccurrences(of: "</svg>", with: CharacterIcon.propsSVG + "</svg>")
+            // (소품은 src/index.html 에 이미 들어 있다)
 
         web = WKWebView(frame: NSRect(x: 0, y: 0, width: boxW, height: boxH),
                         configuration: WKWebViewConfiguration())
@@ -528,6 +453,8 @@ final class CharacterIcon {
 
         /* 소품 기본 숨김. 구간별 규칙에서 필요한 것만 켠다. */
         .mb-shades, .mb-cup, .mb-notes, .mb-sweat, .mb-excl, .mb-hs-p, .mb-blaze { display: none; }
+        /* 위젯 창(72px)용 노트북·날개·빛. 아이콘은 상자 기준의 자기 것을 쓴다. */
+        .wg-desk, .wg-wings, .wg-spot { display: none !important; }
         .mb-deskfx { display:none; position:absolute; left:50%; top:50%;
                      width:56px; height:44px; margin-left:-28px; margin-top:-22px;
                      pointer-events:none; overflow:visible; }

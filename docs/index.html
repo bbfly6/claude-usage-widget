@@ -174,9 +174,9 @@
   /* ===== 캐릭터 모션 (character-motion-preview.html 의 애니메이션을 그대로 사용) ===== */
   .motion-grid {
     display: grid;
-    /* 6구간을 한 줄에 늘어놓아야 사용량이 올라가는 흐름으로 읽힌다.
-       auto-fit 으로 두면 5+1 로 갈라져 마지막 하나가 외톨이가 된다. */
-    grid-template-columns: repeat(6, 1fr);
+    /* 정식 7구간 + 히든 1개 = 8칸. 4열 두 줄로 두면 위아래가 균형이 맞는다.
+       auto-fit 으로 두면 6+2 처럼 갈라져 마지막 줄이 외톨이가 된다. */
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
 
     --card-bg:        #262626;
@@ -188,6 +188,8 @@
     --warning:        #FBBF24;
     --danger:         #F87171;
   }
+
+  @media (max-width: 900px) { .motion-grid { grid-template-columns: repeat(2, 1fr); } }
 
   .motion-cell {
     margin: 0;
@@ -282,17 +284,109 @@
   .motion-grid .tier-sleep .char-zzz { display: block; }
   .motion-grid .tier-sleep .char-body { animation: char-breathe 3.4s ease-in-out infinite; }
 
-  .motion-grid .tier-walk-slow .char-walker { animation: walk-x 6.4s ease-in-out infinite alternate; }
-  .motion-grid .tier-walk-slow .char-body { animation: step-bob 1.5s ease-in-out infinite; }
+  /* 아래 구간 규칙은 src/style.css 의 것을 이 페이지 크기에 맞춰 옮겨 적은 것이다.
+     위젯을 고치면 여기도 같이 손봐야 한다. */
+  .motion-grid .mb-shades, .motion-grid .mb-cup, .motion-grid .mb-notes,
+  .motion-grid .mb-hs-p, .motion-grid .mb-excl, .motion-grid .mb-sweat,
+  .motion-grid .mb-blaze, .motion-grid .wg-desk,
+  .motion-grid .wg-wings, .motion-grid .wg-spot { display: none; }
 
-  .motion-grid .tier-walk-fast .char-walker { animation: walk-x 2.4s ease-in-out infinite alternate; }
-  .motion-grid .tier-walk-fast .char-body { animation: step-bob 0.6s ease-in-out infinite; }
+  /* 10~30% — 여유 */
+  .motion-grid .tier-walk-slow .mb-shades,
+  .motion-grid .tier-walk-slow .mb-cup,
+  .motion-grid .tier-walk-slow .mb-notes { display: block; }
+  .motion-grid .tier-walk-slow .char-body { animation: char-breathe 4.2s ease-in-out infinite; }
+  .motion-grid .tier-walk-slow .mb-note1 { animation: note-float 3.2s ease-in-out infinite; }
+  .motion-grid .tier-walk-slow .mb-note2 { animation: note-float 3.2s ease-in-out infinite 1.1s; }
 
-  .motion-grid .tier-jump .char-body { animation: jump-y 0.52s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+  /* 30~50% — 집중 */
+  .motion-grid .tier-walk-fast .mb-hs-p,
+  .motion-grid .tier-walk-fast .wg-desk { display: block; }
+  .motion-grid .tier-walk-fast .char-body { animation: type-bob 0.42s ease-in-out infinite; }
 
+  /* 50~80% — 다급 */
+  .motion-grid .tier-jump .mb-excl,
+  .motion-grid .tier-jump .mb-sweat { display: block; }
+  .motion-grid .tier-jump .char-body { animation: weary 1.9s ease-in-out infinite; }
+  .motion-grid .tier-jump .mb-excl { transform-box: fill-box; transform-origin: 50% 100%;
+                                     animation: excl-pulse 1.1s ease-in-out infinite alternate; }
+  .motion-grid .tier-jump .mb-drop1 { animation: sweat-drop 2.4s ease-in infinite; }
+
+  /* 80~90% — 불 */
   .motion-grid .tier-fire .char-flame { display: block; animation: flame-flicker 0.24s steps(2) infinite; }
   .motion-grid .tier-fire .char-walker { animation: panic-x 0.62s ease-in-out infinite alternate; }
   .motion-grid .tier-fire .char-body { animation: jump-y 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+  /* 90% 초과 — 과열. 실루엣과 채움색을 같이 바꿔야 앞 구간과 갈린다 */
+  .motion-grid .tier-fire-hot .char-flame { display: block; animation: flame-flicker 0.18s steps(2) infinite; }
+  .motion-grid .tier-fire-hot .mb-blaze { display: block; }
+  .motion-grid .tier-fire-hot .mb-blaze-l,
+  .motion-grid .tier-fire-hot .mb-blaze-r { transform-box: fill-box; transform-origin: 50% 100%; }
+  .motion-grid .tier-fire-hot .mb-blaze-l { animation: blaze-a 0.3s steps(3, end) infinite; }
+  .motion-grid .tier-fire-hot .mb-blaze-r { animation: blaze-b 0.3s steps(3, end) infinite; }
+  .motion-grid .tier-fire-hot .char-svg > path { animation: scorch 0.6s ease-in-out infinite alternate; }
+  .motion-grid .tier-fire-hot .char-walker { animation: panic-x 0.5s ease-in-out infinite alternate; }
+  .motion-grid .tier-fire-hot .char-body { animation: jump-y 0.26s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
+
+  /* 히든 — 부활. 페이지에서는 반복 재생해 보여준다 */
+  .motion-grid .tier-revive .wg-spot,
+  .motion-grid .tier-revive .wg-wings { display: block; }
+  .motion-grid .tier-revive .char-body { animation: revive-rise 4.6s ease-in-out infinite; }
+  .motion-grid .tier-revive .wg-wings { transform-box: fill-box; transform-origin: 50% 60%;
+                                        animation: revive-wings 4.6s ease-out infinite; }
+  .motion-grid .tier-revive .wg-spot { animation: revive-light 4.6s ease-in-out infinite; }
+  .motion-grid .tier-revive .wg-spot {
+    position: absolute; left: 50%; bottom: 0;
+    width: 96px; height: 120px; margin-left: -48px; pointer-events: none;
+    background: radial-gradient(ellipse 50% 60% at 50% 18%,
+                rgba(255,244,214,.75), rgba(255,236,190,.18) 55%, transparent 75%);
+  }
+
+  @keyframes note-float {
+    0%   { opacity: 0; transform: translate(0, 6px) }
+    25%  { opacity: 1; transform: translate(1px, 0) }
+    70%  { opacity: .7; transform: translate(3px, -10px) }
+    100% { opacity: 0; transform: translate(5px, -18px) }
+  }
+  @keyframes type-bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-2px) } }
+  @keyframes weary {
+    0%,100% { transform: translateY(0) scaleY(1) }
+    55%     { transform: translateY(3px) scaleY(.965) }
+  }
+  @keyframes excl-pulse { 0% { transform: scale(1) } 100% { transform: scale(1.12) } }
+  @keyframes sweat-drop {
+    0%   { opacity: 0; transform: translateY(-2px) }
+    12%  { opacity: 1; transform: translateY(0) }
+    46%  { opacity: 0; transform: translateY(14px) }
+    100% { opacity: 0; transform: translateY(14px) }
+  }
+  @keyframes blaze-a {
+    0%,100% { transform: scaleY(1)    translateY(0);    opacity: .92 }
+    50%     { transform: scaleY(1.32) translateY(-2px); opacity: 1 }
+  }
+  @keyframes blaze-b {
+    0%,100% { transform: scaleY(1.28) translateY(-2px); opacity: 1 }
+    50%     { transform: scaleY(.9)   translateY(0);    opacity: .88 }
+  }
+  @keyframes scorch { 0% { fill: #e8583a } 100% { fill: #c4160b } }
+  @keyframes revive-rise {
+    0%   { transform: translateY(6px) scaleY(.82) }
+    18%  { transform: translateY(8px) scaleY(.76) }
+    45%  { transform: translateY(-6px) scaleY(1.04) }
+    70%  { transform: translateY(-14px) scaleY(1) }
+    88%  { transform: translateY(-4px) scaleY(1) }
+    100% { transform: translateY(0) scaleY(1) }
+  }
+  @keyframes revive-wings {
+    0%,20% { opacity: 0; transform: scale(.35) }
+    38%    { opacity: 1; transform: scale(1.06) }
+    70%    { opacity: 1; transform: scale(1) }
+    92%    { opacity: 0; transform: scale(.9) }
+    100%   { opacity: 0; transform: scale(.9) }
+  }
+  @keyframes revive-light {
+    0% { opacity: 0 } 15% { opacity: 1 } 72% { opacity: .85 } 100% { opacity: 0 }
+  }
 
   /* 100% — 한도 소진. 불이 꺼지고 회색으로 굳는다 */
   .motion-grid .char-eyes-x,
@@ -665,105 +759,909 @@
           <span class="motion-desc">눈 감고 잠</span>
         </figcaption>
         <div class="char-stage tier-sleep">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent">3%</span></div>
-        <div class="char-body">
-        <div class="char-zzz"><span>z</span><span>z</span><span>z</span></div>
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        <g class="char-eyes-shut">
-        <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
-        <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
-        <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
-        <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
-        </g>
-        </svg>
-        </div>
-        </div>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent">3%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
       <figure class="motion-cell">
         <figcaption>
           <span class="motion-range">10 ~ 30%</span>
-          <span class="motion-desc">좌우로 천천히 걷기</span>
+          <span class="motion-desc">선글라스 끼고 커피에 휘파람</span>
         </figcaption>
         <div class="char-stage tier-walk-slow">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent">18%</span></div>
-        <div class="char-body">
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        </svg>
-        </div>
-        </div>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent">18%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
       <figure class="motion-cell">
         <figcaption>
           <span class="motion-range">30 ~ 50%</span>
-          <span class="motion-desc">좌우로 빠르게 걷기</span>
+          <span class="motion-desc">헤드셋 쓰고 노트북 앞에서 작업</span>
         </figcaption>
         <div class="char-stage tier-walk-fast">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent">42%</span></div>
-        <div class="char-body">
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        </svg>
-        </div>
-        </div>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent">42%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
       <figure class="motion-cell">
         <figcaption>
           <span class="motion-range">50 ~ 80%</span>
-          <span class="motion-desc">위아래로 뛰기</span>
+          <span class="motion-desc">느낌표 띄우고 땀 한 방울</span>
         </figcaption>
         <div class="char-stage tier-jump">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent warning">64%</span></div>
-        <div class="char-body">
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        </svg>
-        </div>
-        </div>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent warning">64%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
       <figure class="motion-cell">
         <figcaption>
-          <span class="motion-range">80 ~ 100%</span>
+          <span class="motion-range">80 ~ 90%</span>
           <span class="motion-desc">불이 붙어 날뛰기</span>
         </figcaption>
         <div class="char-stage tier-fire">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent danger">92%</span></div>
-        <div class="char-body">
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        <g class="char-flame">
-        <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
-        <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
-        <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
-        <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
-        <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
-        <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
-        <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
-        <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
-        <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
-        </g>
-        </svg>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent danger">85%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">90 ~ 100%</span>
+          <span class="motion-desc">몸이 달아오르고 불이 번짐</span>
+        </figcaption>
+        <div class="char-stage tier-fire-hot">
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent danger">95%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
@@ -773,21 +1671,301 @@
           <span class="motion-desc">한도 소진, 사망</span>
         </figcaption>
         <div class="char-stage tier-dead">
-        <div class="char-track">
-        <div class="char-walker">
-        <div class="char-bubble"><span class="char-bubble-percent danger">100%</span></div>
-        <div class="char-body">
-        <div class="char-halo"></div>
-        <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72">
-        <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
-        <g class="char-eyes-x">
-        <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
-        <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
-        <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3" stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
-        </g>
-        </svg>
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent danger">100%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
+      </figure>
+      <figure class="motion-cell">
+        <figcaption>
+          <span class="motion-range">히든</span>
+          <span class="motion-desc">한도가 초기화되면 부활</span>
+        </figcaption>
+        <div class="char-stage tier-revive">
+<div class="char-track">
+          <div class="char-walker">
+            <div class="char-bubble">
+              <span class="char-bubble-percent">0%</span>
+            </div>
+            <div class="wg-spot" aria-hidden="true"></div>
+            <div class="char-body">
+              <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+              <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->
+              <div class="char-halo" aria-hidden="true"></div>
+              <svg class="char-svg" viewBox="0 0 24 24" width="72" height="72" aria-hidden="true">
+                <!-- 히든(부활) 전용 날개. 몸통보다 먼저 그려야 팔 뒤로 들어간다 -->
+                <g class="wg-wings">
+                  <g class="wg-wing wg-wing-l" fill="#ffffff">
+                    <rect x="2.6" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="1.6" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="0.6" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="0"   y="9.4"  width="4"   height="1.6"/>
+                    <rect x="0.6" y="11"   width="3.4" height="1.6"/>
+                    <rect x="1.6" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                  <g class="wg-wing wg-wing-r" fill="#ffffff">
+                    <rect x="20" y="4.6"  width="1.4" height="1.6"/>
+                    <rect x="20" y="6.2"  width="2.4" height="1.6"/>
+                    <rect x="20" y="7.8"  width="3.4" height="1.6"/>
+                    <rect x="20" y="9.4"  width="4"   height="1.6"/>
+                    <rect x="20" y="11"   width="3.4" height="1.6"/>
+                    <rect x="20" y="12.6" width="2.4" height="1.6"/>
+                  </g>
+                </g>
+                <path clip-rule="evenodd" fill-rule="evenodd" fill="var(--claude-orange)" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+                <!-- 잠자는 구간에서만: 눈구멍을 몸 색으로 덮고 감은 눈을 그림 -->
+                <g class="char-eyes-shut">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="5.9" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                  <rect x="16.4" y="9.6" width="1.7" height="0.62" fill="#7d3f2c"/>
+                </g>
+                <!-- 100% 도달 구간에서만: 눈구멍을 몸 색으로 덮고 십자 눈을 그림 -->
+                <g class="char-eyes-x">
+                  <rect x="6" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <rect x="16.51" y="8.1" width="1.49" height="2.85" fill="var(--claude-orange)"/>
+                  <path d="M6.2 8.75 L7.3 10.3 M7.3 8.75 L6.2 10.3 M16.71 8.75 L17.81 10.3 M17.81 8.75 L16.71 10.3"
+                        stroke="#7d3f2c" stroke-width="0.52" stroke-linecap="round"/>
+                </g>
+                <!-- 80% 초과 구간에서만: 몸에 붙는 불 -->
+                <g class="char-flame">
+                  <rect x="4.6" y="2.7" width="1.5" height="1.4" fill="#f59e0b"/>
+                  <rect x="6.1" y="1.3" width="1.5" height="2.8" fill="#fbbf24"/>
+                  <rect x="7.6" y="2.7" width="1.5" height="1.4" fill="#ef4444"/>
+                  <rect x="10.9" y="0.7" width="1.6" height="3.4" fill="#fbbf24"/>
+                  <rect x="9.3" y="2.3" width="1.6" height="1.8" fill="#ef4444"/>
+                  <rect x="12.5" y="2.3" width="1.5" height="1.8" fill="#f59e0b"/>
+                  <rect x="15.9" y="1.7" width="1.5" height="2.4" fill="#fbbf24"/>
+                  <rect x="14.4" y="3.0" width="1.5" height="1.1" fill="#ef4444"/>
+                  <rect x="17.4" y="2.9" width="1.5" height="1.2" fill="#f59e0b"/>
+                </g>
+
+                <!-- ── 구간별 소품 ──
+                     좌표는 이 viewBox(24×24) 기준이라 창 크기가 달라져도 같이 늘어난다.
+                     맥 메뉴바 아이콘도 같은 그림을 쓴다 (mac/Sources/CharacterIcon.swift).
+
+                     캐릭터 해부: 머리·몸통 x3~21 y5~17.08 / 팔 x0~3·21~24 y10.95~14.05
+                                  다리 y17.08~20 / 눈 x6~7.5·16.5~18 y8.1~10.95
+                     소품은 머리 위(y<5)나 옆 빈 공간에 둔다. 아래에 두면 팔·다리와 섞인다. -->
+
+                <!-- 여유: 선글라스 -->
+                <g class="mb-shades">
+                  <rect x="5.4"  y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="15.8" y="8.1" width="2.8" height="2.6" fill="#22262d"/>
+                  <rect x="8.2"  y="8.8" width="7.6" height="0.7" fill="#22262d"/>
+                  <rect x="5.7"  y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                  <rect x="16.1" y="8.4" width="1"   height="0.8" fill="#66707e"/>
+                </g>
+                <!-- 여유: 커피컵 -->
+                <g class="mb-cup">
+                  <rect x="0"   y="11.8" width="5.2" height="1"   fill="#e9e2d4"/>
+                  <rect x="0.4" y="12.8" width="4.4" height="4.2" fill="#f6f1e6"/>
+                  <rect x="0.9" y="13.3" width="3.4" height="1.4" fill="#6f4a34"/>
+                  <rect x="4.8" y="13.6" width="1.2" height="1.9" fill="#e9e2d4"/>
+                  <rect x="0.4" y="17"   width="4.4" height="0.7" fill="#cdc4b2"/>
+                </g>
+                <!-- 여유: 휘파람 음표 -->
+                <g class="mb-notes">
+                  <g class="mb-note mb-note1">
+                    <rect x="19.6" y="4.2" width="0.9" height="3.2" fill="#5fc9a8"/>
+                    <rect x="18.6" y="6.6" width="1.9" height="1.5" fill="#5fc9a8"/>
+                    <rect x="20.5" y="4.2" width="1.7" height="0.9" fill="#5fc9a8"/>
+                  </g>
+                  <g class="mb-note mb-note2">
+                    <rect x="22.2" y="6.4" width="0.8" height="2.6" fill="#7fd6bb"/>
+                    <rect x="21.3" y="8.3" width="1.7" height="1.3" fill="#7fd6bb"/>
+                  </g>
+                </g>
+                <!-- 집중: 헤드셋. 밴드가 머리에 붙으면 흰머리처럼 읽혀서 띄운다 -->
+                <g class="mb-hs-p">
+                  <rect x="3.2"  y="2.5" width="17.6" height="1.5" rx="0.75" fill="#3a4048"/>
+                  <rect x="3.2"  y="2.5" width="17.6" height="0.6" rx="0.3"  fill="#858d96"/>
+                  <rect x="2.4"  y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="20.0" y="3.1" width="1.6"  height="3.2" rx="0.6"  fill="#3a4048"/>
+                  <rect x="1.3"  y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="19.3" y="5.9" width="3.4"  height="4.8" rx="1.3"  fill="#3a4048"/>
+                  <rect x="2.2"  y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                  <rect x="20.2" y="6.8" width="1.6"  height="3.0" rx="0.7"  fill="#8b939c"/>
+                </g>
+                <!-- 다급: 느낌표 말풍선 -->
+                <g class="mb-excl">
+                  <rect x="7.8"  y="0.5" width="8.4" height="4.2" rx="1.4" fill="#f4f1eb"/>
+                  <rect x="11.1" y="4.3" width="1.8" height="1.2"          fill="#f4f1eb"/>
+                  <rect x="11.5" y="1.4" width="1.0" height="2.0"          fill="#d0463a"/>
+                  <rect x="11.5" y="3.7" width="1.0" height="0.8"          fill="#d0463a"/>
+                </g>
+                <!-- 다급: 땀방울 -->
+                <g class="mb-sweat">
+                  <rect class="mb-drop mb-drop1" x="19.2" y="4.4" width="2" height="2.7" fill="#8fd0f5"/>
+                </g>
+                <!-- 과열: 머리 양옆으로 번지는 불. 팔이 y10.95 부터라 그 아래로는 안 내린다 -->
+                <g class="mb-blaze">
+                  <g class="mb-blaze-l">
+                    <rect x="1.9"  y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="0.9"  y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="2.0"  y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="0.2"  y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                  <g class="mb-blaze-r">
+                    <rect x="20.7" y="8.6" width="1.4" height="2.2" fill="#fbbf24"/>
+                    <rect x="21.6" y="6.4" width="1.5" height="2.6" fill="#f59e0b"/>
+                    <rect x="20.8" y="5.2" width="1.2" height="1.6" fill="#ef4444"/>
+                    <rect x="22.9" y="7.8" width="0.9" height="1.5" fill="#ef4444"/>
+                  </g>
+                </g>
+                <!-- 집중: 노트북. 캐릭터 앞에 세운다. 눈(y8.1~10.95)은 화면 위로 나오고
+                     다리(y17.08~)는 가려져 책상에 앉은 것처럼 보인다 -->
+                <g class="wg-desk">
+                  <rect x="2.5" y="11.2" width="19"   height="7"   rx="0.7" fill="#8d949c"/>
+                  <rect x="2.5" y="11.2" width="19"   height="0.6" rx="0.3" fill="#c2c8ce"/>
+                  <rect x="11"  y="13.8" width="2"    height="2"   rx="0.4" fill="#767d85"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="2.4" rx="0.8" fill="#a7aeb5"/>
+                  <rect x="1.2" y="18.2" width="21.6" height="0.7" rx="0.3" fill="#dde1e5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
         </div>
         </div>
       </figure>
@@ -795,6 +1973,7 @@
     <p class="sub" style="margin-top: var(--sp-3)">
       5시간 한도를 다 쓰면 캐릭터가 회색으로 굳고 머리 위에 링이 생깁니다.
       다음 충전 시각은 기본 창에서 확인할 수 있습니다.
+      한도가 초기화되는 순간에는 <b>부활</b>이 한 번 재생됩니다 — 빛이 내려오고 날개가 돋습니다.
     </p>
   </section>
 
