@@ -166,6 +166,7 @@
   document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
     installThemeSystemButton();
     installMacSettings();
+    installUpdateBar();
   }, 0));
   document.addEventListener('click', (e) => {
     if (e.target && e.target.closest && e.target.closest('.lang-btn')) {
@@ -282,6 +283,95 @@
     const before = (cred && cred.closest('.settings-group')) || panel.querySelector('.divider');
     before ? panel.insertBefore(host, before) : panel.appendChild(host);
     renderMacSettings(await call('macSettings'));
+  }
+
+  // ── 8) 업데이트 띠
+  //
+  // 창 맨 위(헤더 아래)에 얇게 뜬다. 새 버전이 없으면 아예 그리지 않는다.
+  // 눌렀을 때 무슨 일이 일어나는지 그 자리에서 보여야 해서 진행률도 같은 자리에 쓴다.
+  const UPD_L = {
+    ko: { avail: (v) => `새 버전 v${v}`, btn: '업데이트',
+          checking: '확인 중…', downloading: (p) => `내려받는 중 ${p}%`,
+          installing: '설치 중… 곧 다시 켜집니다', failed: '업데이트 실패', retry: '다시 시도' },
+    en: { avail: (v) => `Version ${v} available`, btn: 'Update',
+          checking: 'Checking…', downloading: (p) => `Downloading ${p}%`,
+          installing: 'Installing… restarting shortly', failed: 'Update failed', retry: 'Retry' },
+  };
+
+  function updateBarStyles() {
+    const css = document.createElement('style');
+    css.textContent = `
+      .mac-update {
+        display: flex; align-items: center; gap: 8px;
+        margin: 0 16px 10px; padding: 7px 10px;
+        border: 1px solid rgba(217,119,87,.35); border-radius: 8px;
+        background: rgba(217,119,87,.09);
+        font-size: 11px; color: var(--text-primary);
+      }
+      .mac-update-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .mac-update-btn {
+        font-size: 11px; font-weight: 600; padding: 3px 10px;
+        border: 1px solid rgba(217,119,87,.45); border-radius: 6px;
+        background: var(--claude-orange); color: #fff; cursor: pointer;
+        transition: filter .15s, transform .1s;
+      }
+      .mac-update-btn:hover { filter: brightness(1.07); }
+      .mac-update-btn:active { transform: scale(.97); }
+      /* 진행 중에는 누를 것이 없으므로 버튼을 감춘다 */
+      .mac-update.busy .mac-update-btn { display: none; }
+      .mac-update-bar { height: 3px; border-radius: 2px; background: rgba(217,119,87,.25); flex: 0 0 64px; overflow: hidden; }
+      .mac-update-bar > i { display: block; height: 100%; background: var(--claude-orange); transition: width .2s; }
+    `;
+    document.head.appendChild(css);
+  }
+
+  function renderUpdate(st) {
+    const host = document.getElementById('macUpdate');
+    if (!host) return;
+    const t = UPD_L[st.lang === 'ko' ? 'ko' : 'en'];
+    const show = ['available', 'downloading', 'installing', 'failed'].includes(st.kind);
+    host.hidden = !show;
+    if (!show) { host.innerHTML = ''; return; }
+
+    let msg = '', btn = '', busy = false, bar = '';
+    if (st.kind === 'available')    { msg = t.avail(st.version); btn = t.btn; }
+    if (st.kind === 'downloading')  { msg = t.downloading(st.percent); busy = true;
+                                      bar = `<span class="mac-update-bar"><i style="width:${st.percent}%"></i></span>`; }
+    if (st.kind === 'installing')   { msg = t.installing; busy = true; }
+    if (st.kind === 'failed')       { msg = `${t.failed} — ${st.message || ''}`; btn = t.retry; }
+
+    host.className = 'mac-update' + (busy ? ' busy' : '');
+    host.innerHTML = `<span class="mac-update-msg">${msg}</span>${bar}`
+      + (btn ? `<button class="mac-update-btn" id="macUpdateBtn">${btn}</button>` : '');
+    const b = document.getElementById('macUpdateBtn');
+    if (b) b.addEventListener('click', () => call('updateInstall'));
+  }
+
+  window.__macUpdateState = (st) => renderUpdate(st);
+
+  /// 자동 확인은 실행 직후와 6시간마다 돈다. 그래도 지금 확인하고 싶을 때가 있어
+  /// 푸터의 버전 글씨를 눌러 확인할 수 있게 한다 (새 UI 를 늘리지 않는다).
+  function wireVersionCheck() {
+    const v = document.getElementById('appVersion');
+    if (!v) return;
+    v.style.cursor = 'pointer';
+    v.title = macLang() === 'ko' ? '업데이트 확인' : 'Check for updates';
+    v.addEventListener('click', () => call('updateCheck'));
+  }
+
+  async function installUpdateBar() {
+    if (document.getElementById('macUpdate')) return;
+    // 헤더 바로 아래, 설정 패널보다 위. 설정을 열지 않아도 보여야 한다.
+    const panel = document.getElementById('settingsPanel');
+    if (!panel || !panel.parentNode) return;
+    updateBarStyles();
+    const bar = document.createElement('div');
+    bar.id = 'macUpdate';
+    bar.className = 'mac-update';
+    bar.hidden = true;
+    panel.parentNode.insertBefore(bar, panel);
+    wireVersionCheck();
+    renderUpdate(await call('updateState'));
   }
 
   // ── 5) 창 드래그

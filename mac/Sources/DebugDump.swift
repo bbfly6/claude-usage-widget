@@ -114,6 +114,29 @@ extension AppDelegate {
         try? await Task.sleep(for: .milliseconds(400))
         Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
         Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
+
+        // 업데이트 — CLAUDE_WIDGET_FEED 로 가짜 릴리스를 물려 끝까지 돌려본다.
+        // TEST_UPDATE=1 이면 실제로 교체까지 한다 (앱이 재시작된다).
+        let env = ProcessInfo.processInfo.environment
+        if env["CLAUDE_WIDGET_FEED"] != nil {
+            let r = await Updater.check()
+            Dbg.log("[검증] 업데이트 확인 현재=\(Updater.current) 최신=\(r?.version ?? "없음")")
+            try? await Task.sleep(for: .milliseconds(300))
+            let bar = try? await webView.evaluateJavaScript("""
+            (() => {
+              const b = document.querySelector('#macUpdate');
+              if (!b) return 'none';
+              const btn = b.querySelector('.mac-update-btn');
+              return `보임=${!b.hidden} 글=${(b.textContent||'').trim()} 버튼=${btn ? btn.textContent : '-'} 높이=${b.offsetHeight}`;
+            })()
+            """)
+            Dbg.log("[검증] 업데이트 띠 \(bar ?? "?")")
+            await snapshot("update")
+            if r != nil, env["CLAUDE_WIDGET_TEST_UPDATE"] == "1" {
+                Dbg.log("[검증] 업데이트 설치 시작")
+                await Updater.install()
+            }
+        }
         // 테마 버튼 3개가 한 줄에 앉는지 — 한국어/영어 둘 다 본다.
         // offsetTop 이 전부 같으면 한 줄이다.
         let rowCheck = """

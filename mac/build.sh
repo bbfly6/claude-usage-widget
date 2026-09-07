@@ -8,7 +8,8 @@ cd "$(dirname "$0")/.."
 ROOT="$PWD"
 NAME="Claude Usage Widget by R"
 APP="$ROOT/mac/dist/$NAME.app"
-VERSION=$(node -p "require('./package.json').version")
+# VER=1.7.1 로 덮어쓸 수 있다 — 업데이트 경로를 시험할 때 package.json 을 건드리지 않기 위해서다
+VERSION="${VER:-$(node -p "require('./package.json').version")}"
 ARCH="${ARCH:-arm64}"          # ARCH=universal 로 인텔 겸용 빌드
 
 echo "▸ 버전 $VERSION / 아키텍처 $ARCH"
@@ -58,5 +59,15 @@ PLIST
 echo "▸ 애드혹 서명"
 codesign --force --sign - --timestamp=none "$APP" >/dev/null 2>&1
 
+# 배포용 zip. 업데이터가 찾는 이름 규칙: mac 을 포함하고 .zip 으로 끝난다.
+# ditto 를 쓴다 — zip 명령은 맥 번들의 심볼릭 링크·확장속성을 망가뜨린다.
+ZIP="$ROOT/mac/dist/Claude-Usage-Widget-mac-$VERSION.zip"
+rm -f "$ZIP" "$ZIP.sha256"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+shasum -a 256 "$ZIP" | awk '{print $1}' > "$ZIP.sha256"
+
 echo "▸ 완료: $APP"
 du -sh "$APP"
+echo "▸ 배포용: $ZIP ($(du -h "$ZIP" | cut -f1))"
+echo "  릴리스에 zip 과 .sha256 을 둘 다 올린다."
+echo "  체크섬 자산이 있으면 반드시 통과해야 설치한다 - 없으면 검증 없이 진행한다."

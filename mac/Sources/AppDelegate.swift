@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var lastHoverInside: Bool?
     /// 시스템 다크/라이트가 바뀌는 걸 지켜본다. 해제하려면 보관해야 한다.
     private var appearanceObs: NSKeyValueObservation?
+    private var updateTimer: Timer?
 
     // 창 드래그 (Electron 의 -webkit-app-region: drag 대체)
     private var dragMonitors: [Any] = []
@@ -58,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         startAppearanceWatch()
         // 이미 허용해 둔 사용자라면 묻지 않고 바로 쓸 수 있어야 한다. 상태만 읽는다.
         Task { await Notifications.refreshAuthorization() }
+        startUpdateWatch()
         HotKeyCenter.shared.onFire = { [weak self] in self?.toggleByHotKey() }
         HotKeyCenter.shared.reload()
         // 상태아이템이 메뉴바에 자리를 잡은 뒤에 띄워야 위치가 맞는다.
@@ -326,6 +328,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         a.alertStyle = .warning
         NSApp.activate(ignoringOtherApps: true)
         a.runModal()
+    }
+
+    // MARK: - 업데이트
+    // 위젯 창 위쪽에 띠가 뜨고, 버튼을 누르면 내려받아 교체하고 다시 켠다.
+    // 서명이 없어 격리 표시를 우리가 지우므로 업데이트 뒤에는 우클릭이 필요 없다.
+
+    private func updateStateDict() -> [String: Any] {
+        var d: [String: Any] = ["current": Updater.current, "lang": uiLang]
+        switch Updater.state {
+        case .idle:               d["kind"] = "idle"
+        case .checking:           d["kind"] = "checking"
+        case .available(let v):   d["kind"] = "available"; d["version"] = v
+        case .downloading(let p): d["kind"] = "downloading"; d["percent"] = p
+        case .installing:         d["kind"] = "installing"
+        case .failed(let m):      d["kind"] = "failed"; d["message"] = m
+        }
+        return d
+    }
+
+    private func pushUpdateState() {
+        guard let j = try? JSONSerialization.data(withJSONObject: updateStateDict()),
+              let t = String(data: j, encoding: .utf8) else { return }
+        Task { _ = try? await web.evaluateJavaScript(
+            "window.__macUpdateState && window.__macUpdateState(\(t))") }
+    }
+
+    /// 실행 직후 한 번, 그다음 6시간마다. GitHub API 는 인증 없이 시간당 60번이라 넉넉하다.
+    private func startUpdateWatch() {
+        Updater.onState = { [weak self] _ in self?.pushUpdateState() }
+        Task {
+            try? await Task.sleep(for: .seconds(4))   // 실행 직후엔 사용량 조회가 먼저다
+            await Updater.check()
+        }
+        let t = Timer(timeInterval: 6 * 3600, repeats: true) { _ in
+            Task { @MainActor in await Updater.check() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        updateTimer = t
     }
 
     // MARK: - 위젯 창이 그리는 맥 전용 설정
@@ -709,6 +749,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                 self.menuPreviewAll(); replyHandler(nil, nil)
             case "previewMenuBar":
                 self.menuPreview(); replyHandler(nil, nil)
+            case "updateState":
+                replyHandler(self.updateStateDict(), nil)
+            case "updateInstall":
+                replyHandler(nil, nil)
+                Task { await Updater.install() }
+            case "updateCheck":
+                replyHandler(nil, nil)
+                Task { await Updater.check() }
             case "dragStart":
                 self.beginDrag(); replyHandler(nil, nil)
             default:
