@@ -76,15 +76,21 @@ enum Updater {
             let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
             let assets = j["assets"] as? [[String: Any]] ?? []
             // 맥용 zip 을 찾는다. 이름 규칙은 mac/build.sh 가 만든다.
-            let macZip = assets.first {
+            // 릴리스에는 버전이 붙은 것과 안 붙은 것 두 벌이 올라간다
+            // (안 붙은 쪽은 설치 페이지가 쓰는 고정 링크용 — Windows 도 같은 방식이다).
+            // 어느 쪽을 집어도 내용은 같지만, 버전이 든 이름을 먼저 골라 결과를 고정한다.
+            let macZips = assets.filter {
                 let n = ($0["name"] as? String ?? "").lowercased()
                 return n.contains("mac") && n.hasSuffix(".zip")
             }
+            let macZip = macZips.first { ($0["name"] as? String ?? "").contains(ver) } ?? macZips.first
             guard let a = macZip, let s = a["browser_download_url"] as? String, let url = URL(string: s) else {
                 Dbg.log("업데이트: 맥용 zip 자산 없음 (자산 \(assets.count)개)")
                 set(.idle); return nil
             }
-            let shaAsset = assets.first { ($0["name"] as? String ?? "").lowercased().hasSuffix(".sha256") }
+            // 체크섬은 고른 zip 에 대응하는 것이어야 한다
+            let zipName = (macZip?["name"] as? String) ?? ""
+            let shaAsset = assets.first { ($0["name"] as? String ?? "") == zipName + ".sha256" }
             let r = Release(
                 version: ver,
                 notes: (j["body"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
@@ -121,6 +127,7 @@ enum Updater {
 
     static func install() async {
         guard let r = latest else { return }
+        if let why = blockedLocation() { set(.failed(why)); return }
         do {
             set(.downloading(0))
             let zip = try await download(r.zipURL)
@@ -133,6 +140,26 @@ enum Updater {
             Dbg.log("업데이트 실패: \(error.localizedDescription)")
             set(.failed(error.localizedDescription))
         }
+    }
+
+    /// 데스크탑·서류·다운로드·iCloud 는 TCC 로 보호된다.
+    /// 교체 스크립트는 앱과 분리돼 launchd 밑으로 들어가므로 이 폴더들에 접근할 권한이 없고,
+    /// `mv` 가 응답 없이 멈춘다 — 앱은 이미 종료된 뒤라 사용자에게는 그냥 사라진 것처럼 보인다
+    /// (260907 실측: 데스크탑에서 mv 가 1분 넘게 매달림, /Applications 에서는 정상).
+    /// 그래서 아예 시작하지 않고 옮기라고 알린다.
+    static func blockedLocation() -> String? {
+        let path = Bundle.main.bundleURL.resolvingSymlinksInPath().path
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let guarded = ["/Desktop/", "/Documents/", "/Downloads/", "/Library/Mobile Documents/"]
+        for g in guarded where path.hasPrefix(home + g) {
+            return "앱이 보호된 폴더에 있어 자동 교체를 할 수 없습니다. 응용 프로그램 폴더로 옮긴 뒤 다시 시도해주세요."
+        }
+        // 폴더에 쓸 수 없으면 어차피 교체가 안 된다
+        let parent = Bundle.main.bundleURL.deletingLastPathComponent().path
+        if !FileManager.default.isWritableFile(atPath: parent) {
+            return "앱이 있는 폴더에 쓸 수 없습니다. 응용 프로그램 폴더로 옮긴 뒤 다시 시도해주세요."
+        }
+        return nil
     }
 
     private static func download(_ url: URL) async throws -> URL {
@@ -241,9 +268,22 @@ enum Updater {
         if kill -0 "$PID" 2>/dev/null; then echo "앱이 안 끝남 — 중단"; exit 1; fi
         BAK="$APP.old"
         rm -rf "$BAK"
-        mv "$APP" "$BAK" || { echo "백업 실패"; exit 1; }
-        if ! mv "$NEW" "$APP"; then
-          echo "교체 실패 — 되돌림"; mv "$BAK" "$APP"; exit 1
+        # mv 는 권한(TCC) 대기로 응답 없이 멈출 수 있다. 멈추면 앱을 되살리고 포기한다 —
+        # 여기서 그냥 매달리면 사용자에게는 앱이 사라진 것으로 보인다.
+        run_mv() {
+          mv "$1" "$2" & local mp=$!
+          for _ in $(seq 1 100); do kill -0 $mp 2>/dev/null || break; sleep 0.1; done
+          if kill -0 $mp 2>/dev/null; then kill -9 $mp 2>/dev/null; return 2; fi
+          wait $mp
+        }
+        run_mv "$APP" "$BAK"
+        case $? in
+          0) ;;
+          2) echo "백업이 멈춤(권한?) — 앱을 되살린다"; open "$APP"; exit 1 ;;
+          *) echo "백업 실패 — 앱을 되살린다"; open "$APP"; exit 1 ;;
+        esac
+        if ! run_mv "$NEW" "$APP"; then
+          echo "교체 실패 — 되돌림"; mv "$BAK" "$APP" 2>/dev/null; open "$APP"; exit 1
         fi
         # 서명이 없으므로 격리 표시를 지운다. 안 지우면 열 때마다 우클릭해야 한다.
         xattr -dr com.apple.quarantine "$APP" 2>/dev/null

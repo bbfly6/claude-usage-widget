@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude Usage Widget by R — 설치 가이드</title>
-<meta name="description" content="Claude 사용량을 바탕화면에서 바로 확인하는 위젯. 설치와 로그인 방법 안내.">
+<meta name="description" content="Claude 사용량을 바탕화면에서 바로 확인하는 위젯. Windows·macOS 설치와 로그인 방법 안내.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <style>
@@ -416,6 +416,29 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+
+  /* 두 번째 플랫폼 버튼 — 같은 크기, 낮은 강조 */
+  .btn-alt { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn-alt:hover { background: var(--surface); border-color: var(--accent); color: var(--text); }
+
+  /* 운영체제 탭 */
+  .os-tabs { display: flex; gap: 6px; margin: 0 0 var(--sp-4); }
+  .os-tab {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 7px 16px; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--line);
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .os-tab:hover { color: var(--text); border-color: var(--accent); }
+  .os-tab:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  .os-tab.is-on { background: var(--accent-bg); color: var(--accent); border-color: rgba(217,119,87,.4); }
+
+  /* 맥 전용 요약 카드 */
+  .mac-points { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-3); }
+  .mac-point { border: 1px solid var(--line); border-radius: var(--radius); padding: var(--sp-3); background: var(--surface); }
+  .mac-point b { display: block; margin-bottom: 6px; }
+  .mac-point span { color: var(--text-mid); font-size: 14px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -423,23 +446,31 @@
 <div class="wrap">
 
   <header class="hero">
-    <span class="badge">Windows 데스크톱 위젯</span>
+    <span class="badge">Windows · macOS 데스크톱 위젯</span>
     <h1>Claude를 얼마나 썼는지<br>바탕화면에서 바로 확인</h1>
     <p class="lede">
       Claude 사용량을 확인하려고 매번 웹사이트에 들어갈 필요 없이,
       화면 한쪽에 띄워두고 현재 사용률과 초기화까지 남은 시간을 바로 봅니다.
     </p>
-    <div class="cta-row">
-      <a class="btn" href="https://github.com/bbfly6/claude-usage-widget/releases/latest/download/Claude-Usage-Widget-Setup.exe">
+    <div class="cta-row" id="ctaRow">
+      <a class="btn" data-os="win" href="https://github.com/bbfly6/claude-usage-widget/releases/latest/download/Claude-Usage-Widget-Setup.exe">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        설치 파일 내려받기
+        Windows 내려받기
       </a>
-      <span class="cta-note">Windows 10 · 11 &nbsp;|&nbsp; GitHub 가입 필요 없음</span>
+      <a class="btn btn-alt" data-os="mac" href="https://github.com/bbfly6/claude-usage-widget/releases/latest/download/Claude-Usage-Widget-mac.zip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        macOS 내려받기
+      </a>
     </div>
+    <p class="cta-note">Windows 10 · 11 &nbsp;|&nbsp; macOS 13 이상 (인텔 · 애플 실리콘) &nbsp;|&nbsp; GitHub 가입 필요 없음</p>
   </header>
 
   <section>
@@ -477,7 +508,11 @@
   <section>
     <h2>설치하기</h2>
     <p class="sub">3분이면 끝납니다. 관리자 권한은 필요 없습니다.</p>
-    <ol class="steps">
+    <div class="os-tabs" role="tablist" aria-label="운영체제 선택">
+      <button class="os-tab is-on" data-tab="win" role="tab" aria-selected="true">Windows</button>
+      <button class="os-tab" data-tab="mac" role="tab" aria-selected="false">macOS</button>
+    </div>
+    <ol class="steps" data-panel="win">
       <li>
         <h3>설치 파일을 내려받아 실행</h3>
         <div class="body">위 <b>[설치 파일 내려받기]</b> 버튼을 누르면 바로 받아집니다.</div>
@@ -509,6 +544,81 @@
         </div>
       </li>
     </ol>
+
+    <ol class="steps" data-panel="mac" hidden>
+      <li>
+        <h3>내려받아 <b>응용 프로그램</b> 폴더로 옮기기</h3>
+        <div class="body">
+          zip을 열면 앱이 나옵니다. 그 앱을 <b>응용 프로그램</b> 폴더로 끌어다 놓으세요.
+        </div>
+        <div class="callout">
+          <b>반드시 응용 프로그램 폴더에 두세요.</b>
+          바탕화면·다운로드·서류 폴더는 macOS가 따로 보호하는 곳이라
+          <b>자동 업데이트가 동작하지 않습니다.</b>
+        </div>
+      </li>
+      <li>
+        <h3>처음 열 때 한 번, 열기를 허용</h3>
+        <div class="body">
+          앱을 처음 열면 <b>“Apple이 악성 소프트웨어가 있는지 확인할 수 없습니다”</b> 라는 안내가 뜨고 열리지 않습니다.
+          이렇게 하면 됩니다.
+        </div>
+        <div class="callout">
+          <kbd>시스템 설정</kbd> → <kbd>개인정보 보호 및 보안</kbd> 으로 가서 아래로 내리면
+          <b>“Claude Usage Widget by R이(가) 차단되었습니다”</b> 가 보입니다.
+          옆의 <kbd>그래도 열기</kbd> → 다시 <kbd>열기</kbd> 를 누르면 실행됩니다.
+          <br><br>
+          개발자 서명(연 $99 애플 프로그램)을 넣지 않아 나타나는 안내입니다.
+          소스 코드는 <a href="https://github.com/bbfly6/claude-usage-widget">공개</a>돼 있어
+          무엇을 하는 프로그램인지 직접 확인할 수 있습니다.
+          <b>이 과정은 설치할 때 한 번뿐</b>이고, 이후 업데이트에서는 다시 묻지 않습니다.
+        </div>
+      </li>
+      <li>
+        <h3>메뉴바 아이콘을 눌러 <b>[로그인 시작]</b></h3>
+        <div class="body">
+          화면 맨 위 메뉴바에 캐릭터 아이콘이 생깁니다. 누르면 위젯 창이 열립니다.
+          로그인 카드의 버튼을 누르면 터미널이 열리고, 안내에 따라 브라우저에서 로그인하면 됩니다.
+        </div>
+        <div class="callout">
+          <b>Dock에는 아이콘이 생기지 않습니다.</b> 메뉴바에만 있습니다.
+          끄려면 메뉴바 아이콘을 <b>우클릭 → 종료</b> 하거나 창 아래 <b>✕</b> 를 누르세요.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>맥에서는 이렇게 다릅니다</h2>
+    <p class="sub">화면과 기능은 같고, 맥에 맞춘 것들이 더해집니다.</p>
+    <div class="mac-points">
+      <div class="mac-point">
+        <b>메뉴바에서 캐릭터가 움직입니다</b>
+        <span>창을 띄워두지 않아도 사용량을 알 수 있습니다. 많이 쓸수록 빨라지고,
+        한도가 초기화되면 잠깐 부활하는 모습이 나옵니다.</span>
+      </div>
+      <div class="mac-point">
+        <b>업데이트가 자동입니다</b>
+        <span>새 버전이 나오면 창 위쪽에 띠가 뜹니다. <b>[업데이트]</b> 를 누르면
+        받아서 교체하고 다시 켜는 것까지 알아서 합니다.</span>
+      </div>
+      <div class="mac-point">
+        <b>80% · 90%에 알림</b>
+        <span>세션과 주간 사용량이 임계값을 넘으면 알려줍니다. 설정에서 켜고 끕니다.</span>
+      </div>
+      <div class="mac-point">
+        <b>단축키로 여닫기</b>
+        <span>기본 <kbd>⌃⌥C</kbd>. 설정에서 원하는 조합으로 바꿀 수 있습니다.</span>
+      </div>
+      <div class="mac-point">
+        <b>시스템 테마 따라가기</b>
+        <span>테마를 <b>자동</b>으로 두면 맥의 다크/라이트 설정을 따라갑니다.</span>
+      </div>
+      <div class="mac-point">
+        <b>로그인 시 자동 시작</b>
+        <span>설정에서 켜두면 맥을 켤 때마다 알아서 메뉴바에 올라옵니다.</span>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -757,6 +867,42 @@
   </footer>
 
 </div>
+
+<script>
+(() => {
+  'use strict';
+  // 지금 쓰는 운영체제를 먼저 보여준다. 맞히지 못해도 두 쪽 다 그대로 고를 수 있다.
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || '')
+             || /Mac OS X/.test(navigator.userAgent || '');
+  const os = isMac ? 'mac' : 'win';
+
+  // 히어로 버튼: 내 운영체제 것을 앞으로, 강조도 그쪽에
+  const row = document.getElementById('ctaRow');
+  if (row && isMac) {
+    const mac = row.querySelector('[data-os="mac"]');
+    const win = row.querySelector('[data-os="win"]');
+    if (mac && win) {
+      row.insertBefore(mac, win);
+      mac.classList.remove('btn-alt');
+      win.classList.add('btn-alt');
+    }
+  }
+
+  // 설치 단계 탭
+  const tabs = [...document.querySelectorAll('.os-tab')];
+  const panels = [...document.querySelectorAll('[data-panel]')];
+  function show(which) {
+    tabs.forEach((t) => {
+      const on = t.dataset.tab === which;
+      t.classList.toggle('is-on', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panels.forEach((p) => { p.hidden = p.dataset.panel !== which; });
+  }
+  tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
+  if (tabs.length) show(os);
+})();
+</script>
 
 </body>
 </html>

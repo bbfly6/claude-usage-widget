@@ -62,9 +62,14 @@ codesign --force --sign - --timestamp=none "$APP" >/dev/null 2>&1
 # 배포용 zip. 업데이터가 찾는 이름 규칙: mac 을 포함하고 .zip 으로 끝난다.
 # ditto 를 쓴다 — zip 명령은 맥 번들의 심볼릭 링크·확장속성을 망가뜨린다.
 ZIP="$ROOT/mac/dist/Claude-Usage-Widget-mac-$VERSION.zip"
-rm -f "$ZIP" "$ZIP.sha256"
+# 버전 없는 사본도 만든다. 설치 페이지가 releases/latest/download/ 로 거는 고정 링크용이라
+# 버전이 올라가도 링크가 안 깨진다 (Windows 의 Claude-Usage-Widget-Setup.exe 와 같은 역할).
+ALIAS="$ROOT/mac/dist/Claude-Usage-Widget-mac.zip"
+rm -f "$ZIP" "$ZIP.sha256" "$ALIAS" "$ALIAS.sha256"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 shasum -a 256 "$ZIP" | awk '{print $1}' > "$ZIP.sha256"
+cp "$ZIP" "$ALIAS"
+cp "$ZIP.sha256" "$ALIAS.sha256"
 
 echo "▸ 완료: $APP"
 du -sh "$APP"

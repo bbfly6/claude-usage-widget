@@ -118,7 +118,8 @@ extension AppDelegate {
         // 업데이트 — CLAUDE_WIDGET_FEED 로 가짜 릴리스를 물려 끝까지 돌려본다.
         // TEST_UPDATE=1 이면 실제로 교체까지 한다 (앱이 재시작된다).
         let env = ProcessInfo.processInfo.environment
-        if env["CLAUDE_WIDGET_FEED"] != nil {
+        // FEED 는 가짜 릴리스를 물릴 때, TEST_UPDATE 는 실제 GitHub 로 끝까지 돌려볼 때 쓴다
+        if env["CLAUDE_WIDGET_FEED"] != nil || env["CLAUDE_WIDGET_TEST_UPDATE"] == "1" {
             let r = await Updater.check()
             Dbg.log("[검증] 업데이트 확인 현재=\(Updater.current) 최신=\(r?.version ?? "없음")")
             try? await Task.sleep(for: .milliseconds(300))
