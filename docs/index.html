@@ -81,7 +81,10 @@
     text-decoration: none; border: 0;
     transition: transform 0.14s ease, background-color 0.14s ease;
   }
-  .btn:hover { background: var(--accent-hi); transform: translateY(-2px); }
+  /* color 를 다시 못박아야 한다. 아래쪽 `a:hover { color: var(--accent-hi) }` 가
+     .btn 의 color(0,1,0)보다 우선(0,1,1)이라, 안 적으면 글자색이 hover 배경색과
+     같아져 글자와 아이콘이 통째로 사라진다. */
+  .btn:hover { background: var(--accent-hi); color: #1B1005; transform: translateY(-2px); }
   .btn:active { transform: translateY(0); }
   .btn:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
   .btn svg { flex: none; }
