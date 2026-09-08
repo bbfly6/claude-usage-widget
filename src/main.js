@@ -183,6 +183,117 @@ ipcMain.handle('set-window-mode', (_event, mode) => {
   return { ok: true, mode };
 });
 
+// ── IPC: 캐릭터 전체 보기
+//
+// 사용량 구간별 캐릭터 8종을 한 페이지에 펼쳐 보여준다.
+// 실제 그 사용량이 될 때까지 기다리지 않고 확인할 수 있게 하기 위한 것이고,
+// 맥 버전의 같은 기능(네이티브가 HTML 을 만든다)과 짝을 맞춘 것이다.
+//
+// 페이지는 임시 폴더에 만들어 기본 브라우저로 연다.
+// asar 안의 파일은 브라우저가 file:// 로 읽지 못하므로 CSS 를 그대로 심는다.
+
+const CHAR_TIERS_PREVIEW = [
+  ['tier-sleep', '잠 ~10%', 'Sleep ~10%', '5%'],
+  ['tier-walk-slow', '여유 ~30%', 'Chill ~30%', '20%'],
+  ['tier-walk-fast', '집중 ~50%', 'Focus ~50%', '40%'],
+  ['tier-jump', '다급 ~80%', 'Rush ~80%', '70%'],
+  ['tier-fire', '불 ~90%', 'Fire ~90%', '85%'],
+  ['tier-fire tier-fire-hot', '과열 90%+', 'Overheat 90%+', '95%'],
+  ['tier-dead', '사망 100%', 'Gone 100%', '100%'],
+  ['tier-revive', '히든 · 부활', 'Hidden · Revive', '0%'],
+];
+
+// index.html 의 <div class="char-track"> 블록을 통째로 꺼낸다.
+// 안에 div 가 중첩돼 있어 깊이를 세면서 닫는 태그를 찾는다.
+function extractDivBlock(html, opener) {
+  const start = html.indexOf(opener);
+  if (start < 0) return null;
+  let depth = 0;
+  let i = start;
+  while (i < html.length) {
+    if (html.startsWith('<div', i)) { depth += 1; i += 4; }
+    else if (html.startsWith('</div>', i)) {
+      depth -= 1; i += 6;
+      if (depth === 0) return html.slice(start, i);
+    } else i += 1;
+  }
+  return null;
+}
+
+// 말풍선 숫자 색은 renderer.js 의 setCharPercent 와 같은 기준으로 맞춘다.
+// 여기만 늘 초록이면 위젯에서 본 것과 달라 보인다.
+function tierTrack(track, pct) {
+  const n = parseInt(pct, 10);
+  const tone = n >= 80 ? ' danger' : n >= 50 ? ' warning' : '';
+  return track
+    .replace('class="char-bubble-percent"', `class="char-bubble-percent${tone}"`)
+    .replace('>--<', `>${pct}<`);
+}
+
+function buildCharactersPage(lang) {
+  const ko = lang === 'ko';
+  const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf8');
+  const track = extractDivBlock(html, '<div class="char-track">');
+  if (!track) throw new Error('char-track block not found');
+
+  const cards = CHAR_TIERS_PREVIEW.map(([cls, kLabel, eLabel, pct]) => `
+    <div class="pv-card">
+      <div class="pv-label">${ko ? kLabel : eLabel}</div>
+      <div class="char-stage ${cls}">${tierTrack(track, pct)}</div>
+    </div>`).join('');
+
+  return `<!doctype html><html lang="${ko ? 'ko' : 'en'}"><head><meta charset="utf-8">
+<title>${ko ? '캐릭터 전체 보기' : 'All characters'} — Claude Usage Widget</title>
+<style>
+${css}
+/* 위젯 style.css 는 320×500 고정 창용이라 html,body 에 height:100% + overflow:hidden 이
+   걸려 있다. 그대로 두면 페이지가 스크롤되지 않는다. */
+/* style.css 의 body 는 위젯 레이아웃용 flex 다. 그대로 두면 헤더와 격자가 가로로 나란히 서서
+   격자가 내용 폭으로 쪼그라든다 (260908 실측: 1200px 창에서 격자가 508px). */
+html, body { margin:0 !important; padding:0 !important; display:block !important;
+             height:auto !important; min-height:100% !important;
+             overflow:visible !important; overflow-y:auto !important;
+             background:#141416 !important; color:#e8e6e3;
+             font: 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+/* 기본 모드에서는 무대가 숨겨져 있다 — 여기서는 전부 보여준다 */
+/* 부활은 38px 떠오른다 — 무대가 낮으면 머리가 잘린다 */
+.char-stage { display:flex !important; height:178px; padding:0 0 8px; -webkit-app-region:no-drag; }
+/* 부활은 위젯에서 1회 연출이지만 여기서는 반복해서 볼 수 있게 한다 */
+.tier-revive * { animation-iteration-count: infinite !important; }
+/* 캐릭터가 72px 라 칸이 너무 넓으면 그림이 허공에 뜬다. 폭을 묶고 가운데로. */
+.pv-wrap { max-width:960px; margin:0 auto; }
+header { padding:24px 24px 8px; }
+header h1 { margin:0 0 4px; font-size:17px; font-weight:650; letter-spacing:-.2px; }
+header p { margin:0; color:#8b8a88; font-size:12px; }
+.pv-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; padding:16px 24px 32px; }
+@media (max-width: 900px) { .pv-grid { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width: 520px) { .pv-grid { grid-template-columns:1fr; } }
+.pv-card { background:#1e1e21; border:1px solid #2c2c30; border-radius:10px; padding:14px 12px 8px; }
+.pv-label { font-size:12px; font-weight:600; color:#f0eeec; margin-bottom:4px; }
+</style></head><body>
+<div class="pv-wrap">
+<header>
+  <h1>${ko ? '사용량 구간별 캐릭터' : 'Characters by usage'}</h1>
+  <p>${ko ? '위젯 캐릭터 모드에서 보이는 것과 같은 그림입니다.'
+          : 'The same artwork the widget shows in Character mode.'}</p>
+</header>
+<div class="pv-grid">${cards}</div>
+</div>
+</body></html>`;
+}
+
+ipcMain.handle('open-characters', (_event, lang) => {
+  try {
+    const file = path.join(os.tmpdir(), 'claude-widget-characters.html');
+    fs.writeFileSync(file, buildCharactersPage(lang === 'ko' ? 'ko' : 'en'), 'utf8');
+    shell.openPath(file);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e && e.message) };
+  }
+});
+
 // ── IPC: renderer의 minimize / quit 버튼
 ipcMain.on('window-minimize', () => {
   if (mainWindow) mainWindow.minimize();

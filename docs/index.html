@@ -292,7 +292,7 @@
   .motion-grid .mb-shades, .motion-grid .mb-cup, .motion-grid .mb-notes,
   .motion-grid .mb-hs-p, .motion-grid .mb-excl, .motion-grid .mb-sweat,
   .motion-grid .mb-blaze, .motion-grid .wg-desk,
-  .motion-grid .wg-wings, .motion-grid .wg-spot { display: none; }
+  .motion-grid .wg-wings, .motion-grid .wg-spot, .motion-grid .wg-glow { display: none; }
 
   /* 10~30% — 여유 */
   .motion-grid .tier-walk-slow .mb-shades,
@@ -310,7 +310,9 @@
   /* 50~80% — 다급 */
   .motion-grid .tier-jump .mb-excl,
   .motion-grid .tier-jump .mb-sweat { display: block; }
+  .motion-grid .tier-jump .char-walker { animation: motion-pace-x 3.4s ease-in-out infinite alternate; }
   .motion-grid .tier-jump .char-body { animation: weary 1.9s ease-in-out infinite; }
+  .motion-grid .tier-jump .char-svg { animation: step-bob 0.85s ease-in-out infinite; }
   .motion-grid .tier-jump .mb-excl { transform-box: fill-box; transform-origin: 50% 100%;
                                      animation: excl-pulse 1.1s ease-in-out infinite alternate; }
   .motion-grid .tier-jump .mb-drop1 { animation: sweat-drop 2.4s ease-in infinite; }
@@ -331,18 +333,49 @@
   .motion-grid .tier-fire-hot .char-walker { animation: panic-x 0.5s ease-in-out infinite alternate; }
   .motion-grid .tier-fire-hot .char-body { animation: jump-y 0.26s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
 
-  /* 히든 — 부활. 페이지에서는 반복 재생해 보여준다 */
+  /* 히든 — 부활. 페이지에서는 반복 재생해 보여준다.
+     src/style.css 의 .tier-revive 와 같은 값이다 — 위젯을 고치면 여기도 같이 고쳐야 한다. */
+  .motion-grid .tier-revive { --rev: 3.6s; }
   .motion-grid .tier-revive .wg-spot,
-  .motion-grid .tier-revive .wg-wings { display: block; }
-  .motion-grid .tier-revive .char-body { animation: revive-rise 4.6s ease-in-out infinite; }
-  .motion-grid .tier-revive .wg-wings { transform-box: fill-box; transform-origin: 50% 60%;
-                                        animation: revive-wings 4.6s ease-out infinite; }
-  .motion-grid .tier-revive .wg-spot { animation: revive-light 4.6s ease-in-out infinite; }
-  .motion-grid .tier-revive .wg-spot {
+  .motion-grid .tier-revive .wg-glow,
+  .motion-grid .tier-revive .wg-wings,
+  .motion-grid .tier-revive .char-eyes-x,
+  .motion-grid .tier-revive .char-halo { display: block; }
+  .motion-grid .tier-revive .char-bubble { visibility: hidden; }
+  .motion-grid .tier-revive .char-svg { overflow: visible; }
+
+  .motion-grid .tier-revive .char-body   { animation: wg-rev-hop var(--rev) ease-in-out infinite; }
+  .motion-grid .tier-revive .char-svg    { animation: wg-rev-color var(--rev) ease-in-out infinite; }
+  .motion-grid .tier-revive .char-eyes-x { animation: wg-rev-eyes var(--rev) steps(1, end) infinite; }
+  .motion-grid .tier-revive .char-halo   { animation: wg-rev-halo var(--rev) ease-out infinite; }
+  .motion-grid .tier-revive .wg-spot     { animation: wg-rev-spot var(--rev) ease-out infinite; }
+  .motion-grid .tier-revive .wg-glow     { animation: wg-rev-glow var(--rev) ease-in-out infinite; }
+  .motion-grid .tier-revive .wg-wing {
+    transform-box: fill-box;
+    filter: drop-shadow(0 0.22px 0 rgba(120,95,45,.5))
+            drop-shadow(0 -0.22px 0 rgba(120,95,45,.5))
+            drop-shadow(0.22px 0 0 rgba(120,95,45,.5))
+            drop-shadow(-0.22px 0 0 rgba(120,95,45,.5));
+  }
+  .motion-grid .tier-revive .wg-wing-l { transform-origin: 100% 55%;
+                                         animation: wg-rev-wing-l var(--rev) ease-in-out infinite; }
+  .motion-grid .tier-revive .wg-wing-r { transform-origin: 0% 55%;
+                                         animation: wg-rev-wing-r var(--rev) ease-in-out infinite; }
+
+  .motion-grid .wg-spot {
     position: absolute; left: 50%; bottom: 0;
-    width: 96px; height: 120px; margin-left: -48px; pointer-events: none;
-    background: radial-gradient(ellipse 50% 60% at 50% 18%,
-                rgba(255,244,214,.75), rgba(255,236,190,.18) 55%, transparent 75%);
+    width: 112px; height: 152px; margin-left: -56px; pointer-events: none;
+    transform-origin: 50% 0;
+    background: linear-gradient(to bottom,
+                rgba(255,250,225,.9) 0%, rgba(255,244,200,.28) 60%, rgba(255,240,190,0) 100%);
+    clip-path: polygon(41% 0%, 59% 0%, 84% 100%, 16% 100%);
+    filter: blur(2px);
+  }
+  .motion-grid .wg-glow {
+    position: absolute; left: 50%; bottom: 2px;
+    width: 116px; height: 104px; margin-left: -58px; pointer-events: none;
+    background: radial-gradient(circle at 50% 55%,
+                rgba(255,250,228,.75) 0%, rgba(255,244,205,.24) 42%, rgba(255,240,190,0) 66%);
   }
 
   @keyframes note-float {
@@ -372,23 +405,56 @@
     50%     { transform: scaleY(.9)   translateY(0);    opacity: .88 }
   }
   @keyframes scorch { 0% { fill: #e8583a } 100% { fill: #c4160b } }
-  @keyframes revive-rise {
-    0%   { transform: translateY(6px) scaleY(.82) }
-    18%  { transform: translateY(8px) scaleY(.76) }
-    45%  { transform: translateY(-6px) scaleY(1.04) }
-    70%  { transform: translateY(-14px) scaleY(1) }
-    88%  { transform: translateY(-4px) scaleY(1) }
-    100% { transform: translateY(0) scaleY(1) }
+  @keyframes wg-rev-spot {
+    0%       { opacity: 0;   transform: scaleY(.3) }
+    14%      { opacity: .95; transform: scaleY(1) }
+    72%      { opacity: .8;  transform: scaleY(1) }
+    92%,100% { opacity: 0;   transform: scaleY(1) }
   }
-  @keyframes revive-wings {
-    0%,20% { opacity: 0; transform: scale(.35) }
-    38%    { opacity: 1; transform: scale(1.06) }
-    70%    { opacity: 1; transform: scale(1) }
-    92%    { opacity: 0; transform: scale(.9) }
-    100%   { opacity: 0; transform: scale(.9) }
+  @keyframes wg-rev-glow {
+    0%,18%   { opacity: 0 }
+    42%      { opacity: 1 }
+    72%      { opacity: .75 }
+    92%,100% { opacity: 0 }
   }
-  @keyframes revive-light {
-    0% { opacity: 0 } 15% { opacity: 1 } 72% { opacity: .85 } 100% { opacity: 0 }
+  @keyframes wg-rev-eyes {
+    0%,40%   { opacity: 1 }
+    41%,100% { opacity: 0 }
+  }
+  @keyframes wg-rev-halo {
+    0%       { opacity: .85; transform: translateY(0)     scaleX(1) }
+    40%      { opacity: .3;  transform: translateY(-14px) scaleX(.6) }
+    64%,100% { opacity: 0;   transform: translateY(-26px) scaleX(.3) }
+  }
+  @keyframes wg-rev-color {
+    0%,34%   { filter: grayscale(1) brightness(.74); opacity: .9 }
+    58%      { filter: grayscale(.4) brightness(.93); opacity: 1 }
+    78%,100% { filter: grayscale(0) brightness(1);   opacity: 1 }
+  }
+  @keyframes wg-rev-hop {
+    0%,20% { transform: translateY(0)     scaleY(1) }
+    34%    { transform: translateY(3px)   scaleY(.74) }
+    46%    { transform: translateY(0)     scaleY(1.08) }
+    64%    { transform: translateY(-26px) scaleY(1) }
+    74%    { transform: translateY(-38px) scaleY(1) }
+    88%    { transform: translateY(-36px) scaleY(1) }
+    100%   { transform: translateY(0)     scaleY(1) }
+  }
+  @keyframes wg-rev-wing-l {
+    0%,32% { opacity: 0; transform: scale(.2)  rotate(0deg) }
+    44%    { opacity: 1; transform: scale(1.3)  rotate(-14deg) translateY(-1px) }
+    58%    { opacity: 1; transform: scale(2.05) rotate(-30deg) translateY(-1.5px) }
+    72%    { opacity: 1; transform: scale(1.8)  rotate(-17deg) translateY(-1px) }
+    86%    { opacity: 1; transform: scale(2.05) rotate(-27deg) translateY(-1.5px) }
+    100%   { opacity: 0; transform: scale(1.2)  rotate(-8deg) }
+  }
+  @keyframes wg-rev-wing-r {
+    0%,32% { opacity: 0; transform: scale(.2)  rotate(0deg) }
+    44%    { opacity: 1; transform: scale(1.3)  rotate(14deg) translateY(-1px) }
+    58%    { opacity: 1; transform: scale(2.05) rotate(30deg) translateY(-1.5px) }
+    72%    { opacity: 1; transform: scale(1.8)  rotate(17deg) translateY(-1px) }
+    86%    { opacity: 1; transform: scale(2.05) rotate(27deg) translateY(-1.5px) }
+    100%   { opacity: 0; transform: scale(1.2)  rotate(8deg) }
   }
 
   /* 100% — 한도 소진. 불이 꺼지고 회색으로 굳는다 */
@@ -442,13 +508,12 @@
   @keyframes char-breathe { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(1px) scaleY(0.97); } }
   @keyframes zzz-float { 0% { opacity: 0; transform: translateY(4px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-13px); } }
   @keyframes flame-flicker { 0% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0.75; transform: scaleY(0.86); } }
-  /* 원본 걷기 폭은 ±46px 인데 가이드의 좁은 칸에서는 캐릭터가 잘린다.
-     타이밍은 그대로 두고 이동 거리만 줄인 키프레임으로 교체한다. */
-  .motion-grid .tier-walk-slow .char-walker,
-  .motion-grid .tier-walk-fast .char-walker { animation-name: motion-walk-x; }
+  /* 이동 폭은 캐릭터 창(240px) 기준이라 가이드의 좁은 칸에서는 캐릭터가 잘린다.
+     타이밍은 그대로 두고 거리만 줄인 키프레임으로 교체한다.
+     (여유·집중 구간은 더 이상 걷지 않는다 — 소품으로 상태를 보여주는 쪽으로 바뀌었다) */
   .motion-grid .tier-fire .char-walker { animation-name: motion-panic-x; }
 
-  @keyframes motion-walk-x  { from { transform: translateX(-22px); } to { transform: translateX(22px); } }
+  @keyframes motion-pace-x  { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
   @keyframes motion-panic-x { from { transform: translateX(-16px); } to { transform: translateX(16px); } }
 
   @media (max-width: 860px) { .motion-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -1832,6 +1897,7 @@
               <span class="char-bubble-percent">0%</span>
             </div>
             <div class="wg-spot" aria-hidden="true"></div>
+            <div class="wg-glow" aria-hidden="true"></div>
             <div class="char-body">
               <div class="char-zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
               <!-- 100% 도달 구간에서만: 머리 위 엔젤링 -->

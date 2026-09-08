@@ -2,6 +2,16 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
+  /* 부활 연출의 빛·날개. 라이트 테마에서는 크림색이 배경에 묻혀 아예 안 보인다
+     (260908 실측: 흰 날개·크림 빔이 통째로 사라짐). 테마별로 값을 갈아끼운다. */
+  --rev-beam: rgba(255, 250, 225, 0.90);
+  --rev-beam-mid: rgba(255, 244, 200, 0.28);
+  --rev-beam-end: rgba(255, 240, 190, 0);
+  --rev-glow: rgba(255, 250, 228, 0.75);
+  --rev-glow-mid: rgba(255, 244, 205, 0.24);
+  --rev-glow-end: rgba(255, 240, 190, 0);
+  --rev-wing-edge: rgba(120, 95, 45, 0.5);
+
   --bg: #1a1a1a;
   --card-bg: #262626;
   --text-primary: #f5f5f5;
@@ -161,6 +171,21 @@ body {
   display: block;
   margin-bottom: 6px;
 }
+
+/* 설정 안의 보조 링크(캐릭터 전체 보기). 버튼이 아니라 링크로 둔 건
+   설정을 바꾸는 게 아니라 다른 창을 여는 동작이기 때문이다.
+   감싸는 div 를 두지 않는 이유: 맥은 이 링크를 맥 전용 설정 줄로 옮겨 심는데,
+   껍데기가 남으면 빈 줄만큼 여백이 생긴다. */
+.settings-link {
+  display: inline-block;   /* block 이면 빈 오른쪽 여백까지 눌린다 */
+  margin-bottom: 10px;
+  font-size: 10px;
+  color: var(--claude-orange);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.settings-link:hover { text-decoration: underline; }
 
 .lang-buttons {
   display: flex;
@@ -503,6 +528,15 @@ body {
 
 /* ===== Light theme ===== */
 :root[data-theme="light"] {
+  /* 크림 배경 위에서는 크림 빛이 안 보인다 — 채도를 올리고 날개 윤곽을 진하게 */
+  --rev-beam: rgba(255, 199, 105, 0.62);
+  --rev-beam-mid: rgba(255, 184, 88, 0.22);
+  --rev-beam-end: rgba(255, 180, 85, 0);
+  --rev-glow: rgba(255, 200, 112, 0.55);
+  --rev-glow-mid: rgba(255, 186, 92, 0.18);
+  --rev-glow-end: rgba(255, 182, 88, 0);
+  --rev-wing-edge: rgba(110, 80, 35, 0.9);
+
   --bg: #f7f6f3;
   --card-bg: #ffffff;
   --text-primary: #1c1b1a;
@@ -742,7 +776,8 @@ body.mode-character .login-card { display: flex; }
 .mb-blaze,
 .wg-desk,
 .wg-wings,
-.wg-spot { display: none; }
+.wg-spot,
+.wg-glow { display: none; }
 
 .char-flame { transform-origin: 50% 100%; }
 
@@ -802,7 +837,14 @@ body.mode-character .login-card { display: flex; }
    '정신없음'이 아니라 '작업량이 조금 버거운' 정도라 튀어오르는 점프 대신 느린 숨쉬기로 간다. */
 .char-stage.tier-jump .mb-excl,
 .char-stage.tier-jump .mb-sweat { display: block; }
+/* 다급하지만 아직 뛰지는 않는다 — 좌우로 천천히 서성인다.
+   원본 걷기(walk-x ±46px)는 캐릭터 창 240px 에서 벽에 붙는다. 폭을 줄여 쓴다.
+   가로는 walker, 세로 처짐은 char-body — 한 요소에 transform 둘을 걸면 뒤엣것이 덮는다. */
+.char-stage.tier-jump .char-walker { animation: pace-x 3.4s ease-in-out infinite alternate; }
 .char-stage.tier-jump .char-body { animation: weary 1.9s ease-in-out infinite; }
+/* 가로로만 움직이면 걷는 게 아니라 미끄러지는 것으로 보인다. 발 구르는 박자를 얹는다.
+   char-body 는 이미 처짐(weary)을 쓰고 있어 svg 에 건다 — 같은 요소면 뒤엣것이 덮는다. */
+.char-stage.tier-jump .char-svg { animation: step-bob 0.85s ease-in-out infinite; }
 .char-stage.tier-jump .mb-excl { transform-box: fill-box; transform-origin: 50% 100%;
                                  animation: excl-pulse 1.1s ease-in-out infinite alternate; }
 .char-stage.tier-jump .mb-drop1 { animation: sweat-drop 2.4s ease-in infinite; }
@@ -829,26 +871,78 @@ body.mode-character .login-card { display: flex; }
 .char-stage.tier-fire-hot .char-body { animation: jump-y 0.26s cubic-bezier(0.3, 0.1, 0.5, 1) infinite; }
 
 /* 히든 — 부활. 한도가 초기화될 때 한 번만 재생된다.
-   위에서 빛이 내려오고 → 웅크렸다가 → 흰 날개가 돋고 → 천천히 떠올랐다 내려앉는다. */
-.char-stage.tier-revive .wg-spot,
-.char-stage.tier-revive .wg-wings { display: block; }
-.char-stage.tier-revive .char-walker { animation: none; }
-.char-stage.tier-revive .char-body { animation: revive-rise 2.3s ease-in-out 1 both; }
-.char-stage.tier-revive .wg-wings { transform-box: fill-box; transform-origin: 50% 60%;
-                                    animation: revive-wings 2.3s ease-out 1 both; }
-.char-stage.tier-revive .wg-spot { animation: revive-light 2.3s ease-in-out 1 both; }
+   빛이 내려온다 → 웅크린다 → X 눈이 풀리고 회색이 걷힌다 →
+   흰 날개가 활짝 펴진다 → 천천히 떠오른다 → 내려앉는다.
+   메뉴바 아이콘(CharacterIcon.swift 의 mb-rev-*)과 같은 순서·같은 구간 비율이다.
+   진폭만 다르다 — 아이콘은 44px 상자, 여기는 72px 캐릭터.
+   길이를 바꿀 때는 renderer.js 의 REVIVE_MS 도 같이 바꿔야 한다. 그 시간만큼 구간을 붙잡아 둔다. */
+.char-stage.tier-revive { --rev: 3.6s; }
 
-/* 부활 빛기둥 — 무대에 고정한다. 몸 안에 넣으면 떠오를 때 빛도 같이 올라간다. */
+.char-stage.tier-revive .wg-spot,
+.char-stage.tier-revive .wg-glow,
+.char-stage.tier-revive .wg-wings,
+.char-stage.tier-revive .char-eyes-x,
+.char-stage.tier-revive .char-halo { display: block; }
+.char-stage.tier-revive .char-walker { animation: none; }
+
+/* 말풍선은 이 연출 동안만 감춘다.
+   display:none 으로 지우면 자리가 사라져 캐릭터가 위로 튀므로 자리는 남긴다. */
+.char-stage.tier-revive .char-bubble { visibility: hidden; }
+
+/* 날개가 viewBox(24×24) 밖까지 펴진다 — SVG 는 기본이 잘라내기다 */
+.char-stage.tier-revive .char-svg { overflow: visible; }
+
+.char-stage.tier-revive .char-body   { animation: wg-rev-hop var(--rev) ease-in-out 1 both; }
+.char-stage.tier-revive .char-svg    { animation: wg-rev-color var(--rev) ease-in-out 1 both; }
+.char-stage.tier-revive .char-eyes-x { animation: wg-rev-eyes var(--rev) steps(1, end) 1 both; }
+.char-stage.tier-revive .char-halo   { animation: wg-rev-halo var(--rev) ease-out 1 both; }
+.char-stage.tier-revive .wg-spot     { animation: wg-rev-spot var(--rev) ease-out 1 both; }
+.char-stage.tier-revive .wg-glow     { animation: wg-rev-glow var(--rev) ease-in-out 1 both; }
+
+/* 날개는 좌우를 따로 돌린다. 통째로 키우면 '커졌다'로 보이지 성장 원점은 몸 쪽이다.
+   흰 날개는 라이트 테마 배경에 그대로 묻힌다 — 사방 윤곽으로 형태를 남긴다. */
+.char-stage.tier-revive .wg-wing {
+  transform-box: fill-box;
+  /* 길이는 SVG 사용자 단위다 — viewBox 24 를 72px 로 그리므로 1 = 3px, 게다가 날개는
+     2배까지 커진다. 1.4 로 줬더니 화면에서 8px 넘는 갈색 테두리가 됐다 (260908). */
+  filter: drop-shadow(0 0.22px 0 var(--rev-wing-edge))
+          drop-shadow(0 -0.22px 0 var(--rev-wing-edge))
+          drop-shadow(0.22px 0 0 var(--rev-wing-edge))
+          drop-shadow(-0.22px 0 0 var(--rev-wing-edge));
+}
+.char-stage.tier-revive .wg-wing-l { transform-origin: 100% 55%;
+                                     animation: wg-rev-wing-l var(--rev) ease-in-out 1 both; }
+.char-stage.tier-revive .wg-wing-r { transform-origin: 0% 55%;
+                                     animation: wg-rev-wing-r var(--rev) ease-in-out 1 both; }
+
+/* 부활 빛기둥 — 무대에 고정한다. 몸 안에 넣으면 떠오를 때 빛도 같이 올라간다.
+   둥근 얼룩이 아니라 위가 좁고 아래가 퍼지는 쐐기여야 '내려온다'로 읽힌다. */
 .wg-spot {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 96px;
-  height: 120px;
-  margin-left: -48px;
+  width: 112px;
+  height: 152px;
+  margin-left: -56px;
   pointer-events: none;
-  background: radial-gradient(ellipse 50% 60% at 50% 18%,
-              rgba(255, 244, 214, 0.75), rgba(255, 236, 190, 0.18) 55%, transparent 75%);
+  transform-origin: 50% 0;
+  background: linear-gradient(to bottom,
+              var(--rev-beam) 0%, var(--rev-beam-mid) 60%, var(--rev-beam-end) 100%);
+  clip-path: polygon(41% 0%, 59% 0%, 84% 100%, 16% 100%);
+  filter: blur(2px);
+}
+
+/* 몸 뒤에서 퍼지는 잔광. 빛기둥과 달리 캐릭터를 감싼다. */
+.wg-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 116px;
+  height: 104px;
+  margin-left: -58px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 55%,
+              var(--rev-glow) 0%, var(--rev-glow-mid) 42%, var(--rev-glow-end) 66%);
 }
 
 /* 100% 도달 — 한도 소진. 불이 꺼지고 회색으로 굳는다 */
@@ -876,6 +970,11 @@ body.mode-character .login-card { display: flex; }
 @keyframes panic-x {
   from { transform: translateX(-34px); }
   to { transform: translateX(34px); }
+}
+
+@keyframes pace-x {
+  from { transform: translateX(-30px); }
+  to { transform: translateX(30px); }
 }
 
 @keyframes step-bob {
@@ -955,26 +1054,64 @@ body.mode-character .login-card { display: flex; }
 }
 
 /* ── 히든: 부활 ── */
-@keyframes revive-rise {
-  0%   { transform: translateY(6px) scaleY(.82) }
-  18%  { transform: translateY(8px) scaleY(.76) }
-  45%  { transform: translateY(-6px) scaleY(1.04) }
-  70%  { transform: translateY(-14px) scaleY(1) }
-  88%  { transform: translateY(-4px) scaleY(1) }
-  100% { transform: translateY(0) scaleY(1) }
+/* 빛이 먼저 위에서 내려온다 */
+@keyframes wg-rev-spot {
+  0%       { opacity: 0;   transform: scaleY(.3) }
+  14%      { opacity: .95; transform: scaleY(1) }
+  72%      { opacity: .8;  transform: scaleY(1) }
+  92%,100% { opacity: 0;   transform: scaleY(1) }
 }
-@keyframes revive-wings {
-  0%, 20% { opacity: 0; transform: scale(.35) }
-  38%     { opacity: 1; transform: scale(1.06) }
-  70%     { opacity: 1; transform: scale(1) }
-  92%     { opacity: 0; transform: scale(.9) }
-  100%    { opacity: 0; transform: scale(.9) }
+/* 잔광은 날개가 돋을 때 가장 밝다 */
+@keyframes wg-rev-glow {
+  0%,18%   { opacity: 0 }
+  42%      { opacity: 1 }
+  72%      { opacity: .75 }
+  92%,100% { opacity: 0 }
 }
-@keyframes revive-light {
-  0%      { opacity: 0 }
-  15%     { opacity: 1 }
-  72%     { opacity: .85 }
-  100%    { opacity: 0 }
+/* X 눈은 날개가 돋는 순간 풀린다 */
+@keyframes wg-rev-eyes {
+  0%,40%   { opacity: 1 }
+  41%,100% { opacity: 0 }
+}
+/* 후광은 초반에 위로 떠나간다 */
+@keyframes wg-rev-halo {
+  0%       { opacity: .85; transform: translateY(0)     scaleX(1) }
+  40%      { opacity: .3;  transform: translateY(-14px) scaleX(.6) }
+  64%,100% { opacity: 0;   transform: translateY(-26px) scaleX(.3) }
+}
+/* 굳은 회색이 걷히고 제 색이 돌아온다 */
+@keyframes wg-rev-color {
+  0%,34%   { filter: grayscale(1) brightness(.74); opacity: .9 }
+  58%      { filter: grayscale(.4) brightness(.93); opacity: 1 }
+  78%,100% { filter: grayscale(0) brightness(1);   opacity: 1 }
+}
+/* 웅크림 → 펴짐 → 천천히 떠오름 → 정점 → 내려앉음 */
+@keyframes wg-rev-hop {
+  0%,20% { transform: translateY(0)     scaleY(1) }
+  34%    { transform: translateY(3px)   scaleY(.74) }
+  46%    { transform: translateY(0)     scaleY(1.08) }
+  64%    { transform: translateY(-26px) scaleY(1) }
+  74%    { transform: translateY(-38px) scaleY(1) }
+  88%    { transform: translateY(-36px) scaleY(1) }
+  100%   { transform: translateY(0)     scaleY(1) }
+}
+/* 날개는 몸 쪽을 축으로 바깥·위로 활짝 펴진다 */
+/* 안쪽 모서리를 축으로 돌려 편다. translate 를 크게 주면 어깨에서 떨어져 나가 보인다. */
+@keyframes wg-rev-wing-l {
+  0%,32% { opacity: 0; transform: scale(.2)  rotate(0deg) }
+  44%    { opacity: 1; transform: scale(1.3)  rotate(-14deg) translateY(-1px) }
+  58%    { opacity: 1; transform: scale(2.05) rotate(-30deg) translateY(-1.5px) }
+  72%    { opacity: 1; transform: scale(1.8)  rotate(-17deg) translateY(-1px) }
+  86%    { opacity: 1; transform: scale(2.05) rotate(-27deg) translateY(-1.5px) }
+  100%   { opacity: 0; transform: scale(1.2)  rotate(-8deg) }
+}
+@keyframes wg-rev-wing-r {
+  0%,32% { opacity: 0; transform: scale(.2)  rotate(0deg) }
+  44%    { opacity: 1; transform: scale(1.3)  rotate(14deg) translateY(-1px) }
+  58%    { opacity: 1; transform: scale(2.05) rotate(30deg) translateY(-1.5px) }
+  72%    { opacity: 1; transform: scale(1.8)  rotate(17deg) translateY(-1px) }
+  86%    { opacity: 1; transform: scale(2.05) rotate(27deg) translateY(-1.5px) }
+  100%   { opacity: 0; transform: scale(1.2)  rotate(8deg) }
 }
 
 @keyframes flame-flicker {

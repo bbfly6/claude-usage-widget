@@ -29,6 +29,7 @@ const i18n = {
     allModels: 'All models',
     modelLimit: 'Model limit',
     learnMore: 'Learn more',
+    allCharacters: 'All characters →',
     autoSync: 'Auto-sync',
     syncNote: 'Note: rate limit is per-account. Use 10min if running on multiple devices.',
     sync: 'sync',
@@ -75,6 +76,7 @@ const i18n = {
     allModels: '전체 모델',
     modelLimit: '모델 한도',
     learnMore: '자세히 알아보기',
+    allCharacters: '캐릭터 전체 보기 →',
     autoSync: '자동 동기화',
     syncNote: '참고: 속도 제한은 계정 단위. 여러 기기 사용 시 기기당 10분 권장.',
     sync: '동기화',
@@ -181,8 +183,9 @@ async function applyAlwaysOnTop(flag) {
 // 0~10 잠 · ~30 느린 걷기 · ~50 빠른 걷기 · ~80 점프 · ~100 불붙어 날뛰기 · 100 사망
 const CHAR_TIERS = ['tier-sleep', 'tier-walk-slow', 'tier-walk-fast', 'tier-jump',
                     'tier-fire', 'tier-fire-hot', 'tier-dead', 'tier-revive'];
-// 부활 연출 길이. style.css 의 .tier-revive 애니메이션과 같아야 한다.
-const REVIVE_MS = 2300;
+// 부활 연출 길이. style.css 의 `.char-stage.tier-revive { --rev }` 와 같아야 한다.
+// 7단계(빛→웅크림→눈 풀림→날개→떠오름→정점→착지)라 한 단계당 0.5초쯤 돌아가는 값이다.
+const REVIVE_MS = 3600;
 let revivePrev = -1;      // 직전 사용률 — 초기화 시점을 잡으려고 들고 있는다
 let reviveUntil = 0;      // 연출이 끝나는 시각. 그때까지는 구간을 바꾸지 않는다
 
@@ -499,6 +502,8 @@ function applyLanguage() {
   $$('.sub-title')[0].textContent = s.allModels;
   $('#scopedTitle').textContent = scopedModelName || s.modelLimit;
   $('#learnMore').textContent = s.learnMore;
+  // 맥에서는 이 링크를 맥 전용 설정 줄로 옮겨 심는데, 그 줄이 다시 그려지는 순간에는 잠시 떨어져 있다
+  if ($('#previewChars')) $('#previewChars').textContent = s.allCharacters;
   $('.sync-label').textContent = s.autoSync;
   $('.sync-note').textContent = s.syncNote;
   $('#syncBtn').textContent = s.sync;
@@ -623,6 +628,14 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#learnMore').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(HELP_USAGE_URL, '_blank');
+  });
+
+  // 사용량 구간별 캐릭터를 한 페이지에 펼쳐 보여준다.
+  // 실제 그 사용량이 될 때까지 기다리지 않아도 확인할 수 있게 하기 위한 것.
+  // 페이지를 만드는 쪽은 플랫폼마다 다르다 — Windows 는 main.js, 맥은 네이티브.
+  $('#previewChars').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    if (window.widgetAPI && window.widgetAPI.openCharacters) window.widgetAPI.openCharacters(lang);
   });
 
   // Footer window controls (Electron 환경에서만 widgetAPI 존재)

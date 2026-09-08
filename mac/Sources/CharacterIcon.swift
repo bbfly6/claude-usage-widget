@@ -206,8 +206,12 @@ final class CharacterIcon {
     /// 히든: 부활. 한 번만 재생되는 연출이라 루프하지 않는다.
     static let reviveTier = "tier-revive"
     /// 부활은 천천히 보여줘야 하는 연출이라 별도 길이·프레임 수를 쓴다.
-    static let reviveCycle = 2.3
-    static let reviveFrames = 30
+    /// 7단계(빛→웅크림→눈 풀림→날개→떠오름→정점→착지)라 한 단계당 0.5초쯤 필요하다.
+    /// 위젯 창(style.css 의 `--rev`)·renderer.js 의 REVIVE_MS 와 같은 값이어야 한다 —
+    /// 초기화 순간에 셋이 동시에 재생되므로 하나만 짧으면 먼저 끝나 버린다.
+    /// 프레임 수도 같이 늘린다. 30컷 그대로 늘리면 8fps 라 뚝뚝 끊긴다 (3.6/47 ≒ 13fps).
+    static let reviveCycle = 3.6
+    static let reviveFrames = 47
     static var reviveInterval: TimeInterval { reviveCycle / Double(reviveFrames) }
 
     private func render(tier: String, phase: Double, duration: Double) async -> NSImage? {

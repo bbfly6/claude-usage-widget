@@ -115,6 +115,39 @@ extension AppDelegate {
         Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
         Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
 
+        // '캐릭터 전체 보기' 는 index.html(윈도우와 공유) 의 링크를 맥 설정 줄로 옮겨 심은 것이다.
+        // 맥 설정이 다시 그려질 때(위의 % 토글) 같이 지워지면 링크가 사라진다 (260908).
+        let previewPath = NSTemporaryDirectory() + "claude-widget-characters.html"
+        try? FileManager.default.removeItem(atPath: previewPath)
+        let moved = try? await webView.evaluateJavaScript("""
+        (() => {
+          const a = document.querySelector('#previewChars');
+          if (!a) return 'link-gone';
+          a.click();
+          return a.parentElement.id + '/' + a.textContent.trim();
+        })()
+        """)
+        try? await Task.sleep(for: .milliseconds(700))
+        let made = FileManager.default.fileExists(atPath: previewPath)
+        Dbg.log("[검증] 캐릭터 전체 보기 \(moved as? String ?? "?") 페이지생성=\(made)")
+
+        // 링크를 옮기고 나면 원래 자리에 빈 껍데기가 남는다 — 설정창에 빈 줄로 보이면 안 된다
+        let leftover = try? await webView.evaluateJavaScript("""
+        (() => {
+          const d = document.querySelector('#settingsPanel > .settings-link');
+          return d ? '아직 원래 자리에 있음' : '남은 것 없음';
+        })()
+        """)
+        Dbg.log("[검증] 옮긴 뒤 원래 자리 \(leftover as? String ?? "?")")
+
+        // 'Learn more' 는 renderer 가 window.open 을 쓴다.
+        // uiDelegate 가 없으면 WKWebView 가 요청을 조용히 버려 링크가 죽는다 (260908).
+        AppDelegate.lastExternal = nil
+        let hasLink = try? await webView.evaluateJavaScript(
+            "(() => { const a = document.querySelector('#learnMore'); if (!a) return 'no-elem'; a.click(); return a.textContent.trim() })()")
+        try? await Task.sleep(for: .milliseconds(400))
+        Dbg.log("[검증] Learn more '\(hasLink as? String ?? "?")' uiDelegate=\(webView.uiDelegate != nil) 열림=\(AppDelegate.lastExternal ?? "없음")")
+
         // 실제 위젯의 캐릭터 모드 — CHAR_SHOT=1 일 때만
         if ProcessInfo.processInfo.environment["CLAUDE_WIDGET_CHAR_SHOT"] == "1" {
             // 앞 단계에서 설정 패널이 열려 있으면 캐릭터가 가려진다
@@ -136,8 +169,47 @@ extension AppDelegate {
                   s.className = 'char-stage ' + '\(t)';
                 })()
                 """)
-                try? await Task.sleep(for: .milliseconds(500))
+                // 부활은 3.6초짜리 1회 연출이다. 500ms 에서 찍으면 아직 빛만 내려온 참이라
+                // 정작 확인해야 할 '떠오른 정점'(74%)을 못 본다.
+                try? await Task.sleep(for: .milliseconds(t == "tier-revive" ? 2650 : 500))
                 await snapshot("char-\(t)")
+                if t == "tier-jump" {
+                    // 좌우로 서성이는 폭이 창(240px) 안에 들어오는지 — 양 끝에서 잰다
+                    let pace = try? await webView.evaluateJavaScript("""
+                    (() => {
+                      const w = document.querySelector('#charWalker');
+                      const st = document.querySelector('#charStage').getBoundingClientRect();
+                      const at = (d) => { w.style.animationDelay = d; w.style.animationPlayState = 'paused';
+                                          const r = w.getBoundingClientRect(); return [r.left, r.right]; };
+                      const l = at('0s'), r = at('-3.4s');
+                      w.style.animationDelay = ''; w.style.animationPlayState = '';
+                      const lo = Math.min(l[0], r[0]), hi = Math.max(l[1], r[1]);
+                      return `왼쪽끝=${Math.round(lo)} 오른쪽끝=${Math.round(hi)} `
+                           + `무대=${Math.round(st.left)}~${Math.round(st.right)} `
+                           + `잘림=${lo < st.left || hi > st.right}`;
+                    })()
+                    """)
+                    Dbg.log("[검증] 다급 서성임 \(pace as? String ?? "?")")
+                }
+                if t == "tier-revive" {
+                    // 정점에서 머리가 창 밖으로 나가지 않는지 — 캐릭터 창은 240×210 으로 좁다
+                    let fit = try? await webView.evaluateJavaScript("""
+                    (() => {
+                      const st = document.querySelector('#charStage').getBoundingClientRect();
+                      const b  = document.querySelector('#charBody').getBoundingClientRect();
+                      const w  = document.querySelector('.wg-wing-l').getBoundingClientRect();
+                      const top = Math.min(b.top, w.top);
+                      const cs = getComputedStyle(document.querySelector('.wg-wing-l'));
+                      const th = document.documentElement.getAttribute('data-theme');
+                      return `무대=${Math.round(st.top)}~${Math.round(st.bottom)} `
+                           + `캐릭터위=${Math.round(b.top)} 날개=${Math.round(w.top)}~${Math.round(w.bottom)}`
+                           + `x${Math.round(w.width)} 불투명=${cs.opacity} 테마=${th} `
+                           + `윤곽=${(cs.filter||'').slice(0, 42)} `
+                           + `창=${innerWidth}x${innerHeight} 잘림=${top < 0 || top < st.top - 1}`;
+                    })()
+                    """)
+                    Dbg.log("[검증] 부활 정점 \(fit as? String ?? "?")")
+                }
             }
             _ = try? await webView.evaluateJavaScript(
                 "document.querySelector('.mode-btn[data-mode=\"default\"]').click()")

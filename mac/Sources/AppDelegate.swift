@@ -14,7 +14,7 @@ let WINDOW_MODES: [String: WindowMode] = [
 ]
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandlerWithReply, WKNavigationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandlerWithReply, WKNavigationDelegate, WKUIDelegate {
 
     private var statusItem: NSStatusItem!
     private var panel: WidgetPanel!
@@ -106,6 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         web = WKWebView(frame: NSRect(x: 0, y: 0, width: 320, height: 500), configuration: cfg)
         web.navigationDelegate = self
+        // window.open 을 받으려면 필요하다. 없으면 renderer 의 'Learn more' 가 조용히 아무 일도 안 한다.
+        web.uiDelegate = self
         // 투명 배경 — 창 자체가 투명해야 style.css 의 둥근 모서리가 산다
         web.setValue(false, forKey: "drawsBackground")
         // 웹 컨텐츠를 앱처럼 보이게: 우클릭 메뉴·확대 제스처 제거
@@ -455,7 +457,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             let path = NSTemporaryDirectory() + "claude-widget-characters.html"
             do { try html.write(toFile: path, atomically: true, encoding: .utf8) }
             catch { Dbg.log("미리보기 저장 실패"); return }
-            NSWorkspace.shared.open(URL(fileURLWithPath: path))
+            // 자가 점검에서는 브라우저를 실제로 띄우지 않는다 (파일이 만들어졌는지만 본다)
+            if ProcessInfo.processInfo.environment["CLAUDE_WIDGET_NO_OPEN"] != "1" {
+                NSWorkspace.shared.open(URL(fileURLWithPath: path))
+            }
             Dbg.log("전체 미리보기 -> \(path)")
         }
     }
@@ -805,6 +810,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
     func webView(_ w: WKWebView, didFail nav: WKNavigation!, withError e: Error) {
         Dbg.log("load FAIL \(e.localizedDescription)")
+    }
+
+    // MARK: - 외부 링크
+    // renderer.js 는 window.open(url, '_blank') 를 쓴다. Electron 은 setWindowOpenHandler 로
+    // 기본 브라우저에 넘기는데, WKWebView 는 uiDelegate 가 없으면 요청 자체를 버린다
+    // (오류도 없어서 '링크가 안 눌린다'로 보였다 — 260908).
+    // 새 WebView 를 만들지 않고 nil 을 돌려주면 앱 안에서는 아무 창도 열리지 않는다.
+    func webView(_ w: WKWebView, createWebViewWith cfg: WKWebViewConfiguration,
+                 for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        openExternal(action.request.url)
+        return nil
+    }
+
+    /// https 만 연다. file:// 이나 커스텀 스킴을 그대로 넘기면 의도치 않은 앱이 뜬다.
+    static var lastExternal: String?
+
+    private func openExternal(_ url: URL?) {
+        guard let url, url.scheme?.lowercased() == "https" else {
+            Dbg.log("외부 링크 거부 -> \(url?.scheme ?? "nil")")
+            return
+        }
+        AppDelegate.lastExternal = url.host
+        // 자가 점검에서는 브라우저를 실제로 띄우지 않는다
+        if ProcessInfo.processInfo.environment["CLAUDE_WIDGET_NO_OPEN"] != "1" {
+            NSWorkspace.shared.open(url)
+        }
+        Dbg.log("외부 링크 열기 -> \(url.host ?? "?")")
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { false }

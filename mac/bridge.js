@@ -36,6 +36,9 @@
     login: () => call('login'),
     setWindowMode: (mode) => call('setWindowMode', [mode]),
     setAlwaysOnTop: (flag) => call('setAlwaysOnTop', [!!flag]),
+    // '캐릭터 전체 보기' 는 이제 공유 설정창 링크가 부른다.
+    // 맥 미리보기는 메뉴바 크기(28×22pt) 비교까지 보여주므로 네이티브가 만든다.
+    openCharacters: () => call('previewAll'),
     // 네이티브에서 밀어주는 이벤트. 콜백을 보관만 하고 호출은 Swift 가 한다.
     onWindowHover: (cb) => { window.__widgetOnHover = cb; },
     onAlwaysOnTopChanged: (cb) => { window.__widgetOnAlwaysOnTop = cb; },
@@ -185,11 +188,13 @@
   const MAC_L = {
     ko: { notify: '사용량 알림', percent: '메뉴바 % 표시', login: '로그인 시 자동 시작',
           hotkey: '단축키', off: '끔', on: '켬',
-          previewAll: '캐릭터 전체 보기 →', previewBar: '메뉴바에서 재생 →' },
+          previewBar: '메뉴바에서 재생 →' },
     en: { notify: 'Usage alerts', percent: 'Menu bar %', login: 'Start at login',
           hotkey: 'Shortcut', off: 'Off', on: 'On',
-          previewAll: 'All characters →', previewBar: 'Play in menu bar →' },
+          previewBar: 'Play in menu bar →' },
   };
+  let sharedPreviewLink = null;   // 공유 설정창에서 끌어온 '캐릭터 전체 보기' 링크
+
   const macLang = () => {
     try { return (JSON.parse(localStorage.getItem('claudeWidgetSettings')) || {}).lang === 'ko' ? 'ko' : 'en'; }
     catch { return 'en'; }
@@ -219,6 +224,8 @@
       }
       .mac-link { font-size: 10px; color: var(--claude-orange); text-decoration: none; cursor: pointer; }
       .mac-link:hover { text-decoration: underline; }
+      /* 공유 설정창에서 끌어온 링크는 혼자 한 줄일 때를 가정한 아래 여백을 갖고 있다 */
+      .mac-links .settings-link { margin-bottom: 0; }
     `;
     document.head.appendChild(css);
   }
@@ -252,10 +259,19 @@
           </div>
         </div>
       </div>
-      <div class="settings-group mac-links">
-        <a class="mac-link" id="macPreviewAll">${t.previewAll}</a>
+      <div class="settings-group mac-links" id="macLinks">
         <a class="mac-link" id="macPreviewBar">${t.previewBar}</a>
       </div>`;
+
+    // '캐릭터 전체 보기' 는 index.html 이 갖고 있다(윈도우와 공유).
+    // 여기서는 만들지 않고 끌어와 '메뉴바에서 재생' 옆에 세운다 — 둘 다 미리보기라서 붙어 있어야 한다.
+    // 이 함수는 상태가 바뀔 때마다 host.innerHTML 을 다시 쓴다. 그때 옮겨둔 링크도 같이 지워지므로
+    // 노드 자체를 붙잡아 뒀다가 매번 다시 넣는다 (참조가 있으면 떼어져도 노드는 살아 있다).
+    sharedPreviewLink = sharedPreviewLink || document.getElementById('previewChars');
+    if (sharedPreviewLink) {
+      sharedPreviewLink.classList.add('mac-link');
+      host.querySelector('#macLinks').prepend(sharedPreviewLink);
+    }
 
     host.querySelectorAll('.mac-seg-btn[data-mac]').forEach((b) => {
       b.addEventListener('click', async () => {
@@ -264,7 +280,6 @@
       });                                 // (권한 거부처럼 요청대로 안 되는 경우가 있다)
     });
     document.getElementById('macHotkey').addEventListener('click', () => call('pickHotKey'));
-    document.getElementById('macPreviewAll').addEventListener('click', () => call('previewAll'));
     document.getElementById('macPreviewBar').addEventListener('click', () => call('previewMenuBar'));
   }
 
