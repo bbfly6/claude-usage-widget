@@ -109,6 +109,10 @@ npm run build:win
 `npm run build:win` 은 세 단계입니다 — 언패키지 빌드 → 아이콘·버전정보 삽입(`stamp-icon.js`) → 설치본 패키징.
 `win.signAndEditExecutable` 이 꺼져 있어 electron-builder가 rcedit 단계를 건너뛰기 때문에, 아이콘을 따로 넣어줘야 합니다. 이 설정을 켜면 코드 서명 툴체인 압축 해제에서 권한 오류로 빌드가 실패합니다.
 
+맥은 `ARCH=universal ./mac/build.sh` 입니다. 윈도우 설치본은 맥에서 만들 수 없습니다(wine 필요).
+
+새 버전을 내보내는 순서와 함정은 [RELEASING.md](RELEASING.md) 에 정리해뒀습니다.
+
 <br>
 
 ## 만든 것
