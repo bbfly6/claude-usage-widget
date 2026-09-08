@@ -264,6 +264,11 @@ enum Updater {
         APP=$1; NEW=$2; PID=$3
         exec >>"\(log)" 2>&1
         echo "--- $(date) pid=$PID"
+        # 개발용 스위치(CLAUDE_WIDGET_*)를 여기서 뗀다.
+        # 이 스크립트는 앱의 자식이라 앱의 환경을 물려받고, open 은 그것을 새 앱에 그대로 넘긴다
+        # (260908 실측). 점검 모드로 켜둔 채 업데이트하면 교체된 앱도 점검 모드로 떴다.
+        # 아래 open 이 네 군데(성공·되살리기 3종)라 맨 앞에서 한 번에 뗀다.
+        for v in ${!CLAUDE_WIDGET_*}; do unset "$v"; done
         for _ in $(seq 1 150); do kill -0 "$PID" 2>/dev/null || break; sleep 0.1; done
         if kill -0 "$PID" 2>/dev/null; then echo "앱이 안 끝남 — 중단"; exit 1; fi
         BAK="$APP.old"
