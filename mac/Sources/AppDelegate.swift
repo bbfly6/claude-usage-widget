@@ -167,6 +167,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                 ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 panel.animator().alphaValue = 1
             }
+            // 창을 열면 한 번 읽는다. 지금까지는 마지막으로 그려둔 값이 그대로 보였다 —
+            // 자동 갱신이 어떤 이유로든 멈춰 있으면 사용자가 알 방법이 없었다 (260916).
+            // 너무 잦은 호출은 bridge.js 쪽에서 막는다.
+            Task { _ = try? await web.evaluateJavaScript("window.__macPanelShown && window.__macPanelShown()") }
         }
     }
 

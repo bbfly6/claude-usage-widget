@@ -283,6 +283,22 @@
     document.getElementById('macPreviewBar').addEventListener('click', () => call('previewMenuBar'));
   }
 
+  // ── 창을 열 때 한 번 읽기
+  //
+  // renderer 의 자동 갱신은 창 안의 setTimeout 사슬이다. 그게 멈추면 화면이 통째로 굳는데,
+  // 사용자는 숫자가 옛것인지 알 수 없다. 창을 여는 순간 한 번 읽어 그걸 덮는다.
+  // renderer 의 lastSyncAt 은 let 이라 전역이 아니다 — 여기서 따로 시각을 재 중복 호출만 막는다.
+  let lastPanelSync = 0;
+  window.__macPanelShown = () => {
+    const now = Date.now();
+    if (now - lastPanelSync < 60000) return false;   // 여닫기를 반복해도 1분에 한 번만
+    lastPanelSync = now;
+    if (typeof window.doSync === 'function') window.doSync();
+    return true;
+  };
+  // 자가 점검이 시간을 기다리지 않고 확인할 수 있게 열어둔다
+  window.__macPanelShown.reset = () => { lastPanelSync = 0; };
+
   // 네이티브가 상태를 바꿨을 때(단축키 녹화 등) 화면을 다시 그린다
   window.__macSettingsChanged = (st) => renderMacSettings(st);
 

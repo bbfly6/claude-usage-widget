@@ -115,6 +115,48 @@ extension AppDelegate {
         Dbg.log("[검증] 창에서 %표시 끔='\(offTitle)' 켬='\(statusTitle())'")
         Dbg.log("[검증] 우클릭 메뉴 = \(menuTitlesForTest())")
 
+        // 창을 열면 한 번 읽는가. 자동 갱신 사슬이 끊겨도 사용자가 열면 최신값을 보게 하는 안전망 (260916).
+        let nudge = try? await webView.evaluateJavaScript("""
+        (() => {
+          if (typeof window.__macPanelShown !== 'function') return '함수 없음';
+          if (typeof window.doSync !== 'function') return 'doSync 가 전역이 아님';
+          window.__macPanelShown.reset();
+          const first = window.__macPanelShown();
+          const again = window.__macPanelShown();   // 연달아 열어도 한 번만 읽어야 한다
+          return `첫호출=${first} 곧바로다시=${again}`;
+        })()
+        """)
+        Dbg.log("[검증] 창 열 때 갱신 \(nudge as? String ?? "?")")
+
+        // 동기화 잠금이 예외에 걸려도 풀리는가 — 풀리지 않으면 앱이 영영 멈춘다 (260916 실측).
+        // evaluateJavaScript 는 Promise 를 못 돌려주므로 거는 것과 읽는 것을 나눈다.
+        _ = try? await webView.evaluateJavaScript("""
+        (() => {
+          const st = document.querySelector('#statusText');
+          window.__realFetch = window.fetch;
+          Object.defineProperty(st, 'textContent',
+            { set() { throw new Error('시험용'); }, get() { return ''; }, configurable: true });
+          window.fetch = async (u) => String(u).includes('/api/usage')
+            ? new Response(JSON.stringify({ error: 'BOOM' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+            : window.__realFetch(u);
+          doSync().catch(() => {});
+        })()
+        """)
+        try? await Task.sleep(for: .milliseconds(700))
+        let latch = try? await webView.evaluateJavaScript("""
+        (() => {
+          const st = document.querySelector('#statusText');
+          delete st.textContent;
+          window.fetch = window.__realFetch;
+          delete window.__realFetch;
+          const stuck = isSyncing;
+          isSyncing = false;          // 점검이 상태를 남기지 않게 한다
+          doSync();                   // 화면을 정상 값으로 되돌린다
+          return `예외 뒤 isSyncing=${stuck}`;
+        })()
+        """)
+        Dbg.log("[검증] 동기화 잠금 \(latch as? String ?? "?") (true 면 영구 정지)")
+
         // '캐릭터 전체 보기' 는 index.html(윈도우와 공유) 의 링크를 맥 설정 줄로 옮겨 심은 것이다.
         // 맥 설정이 다시 그려질 때(위의 % 토글) 같이 지워지면 링크가 사라진다 (260908).
         let previewPath = NSTemporaryDirectory() + "claude-widget-characters.html"

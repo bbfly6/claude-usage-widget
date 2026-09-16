@@ -425,6 +425,13 @@ async function doSync() {
     statusText.textContent = t().connected;
     statusText.className = 'status-text connected';
 
+    // 사용량을 읽었다는 건 로그인이 살아 있다는 뜻이다.
+    // 만료 안내(아래 TOKEN_EXPIRED 처리)를 걷어주는 곳이 여기밖에 없다 —
+    // 없으면 토큰이 갱신된 뒤에도 "로그인 만료" 카드가 숫자와 함께 남는다 (260916 실측).
+    $('#loginCard').style.display = 'none';
+    $('#credDot').className = 'cred-dot found';
+    $('#credStatus').textContent = t().autoDetected;
+
     lastSyncAt = new Date();
     renderLastSync();
 
@@ -460,19 +467,27 @@ async function doSync() {
       backoffLevel = 0;
       currentDelay = userInterval;
       statusIcon.textContent = '⚠';
-      statusText.textContent = err.message.substring(0, 40);
+      statusText.textContent = String(err && err.message || err).substring(0, 40);
     }
+  } finally {
+    // finally 인 이유: catch 안에서 한 번이라도 예외가 나면 isSyncing 이 true 로 굳는다.
+    // 그러면 이후 모든 호출이 맨 위 `if (isSyncing) return` 에서 되돌아가
+    // 자동 동기화도 sync 버튼도 영영 안 먹는다 — 앱을 껐다 켜야만 풀린다 (260916).
+    isSyncing = false;
+    $('#syncBtn').textContent = t().sync;
+    $('#charSyncBtn')?.classList.remove('syncing');
   }
-
-  isSyncing = false;
-  $('#syncBtn').textContent = t().sync;
-  $('#charSyncBtn')?.classList.remove('syncing');
 }
 
 // 자동 동기화: setTimeout 재귀 — 429 backoff로 간격이 바뀌어도 매번 다시 예약
 async function autoSyncTick() {
-  await doSync();
-  scheduleNextSync();
+  // doSync 가 거부되면 다음 예약을 못 해 자동 갱신이 통째로 멈춘다.
+  // 이 사슬은 한 번 끊기면 스스로 이어지지 않으므로 반드시 finally 에서 다시 건다.
+  try {
+    await doSync();
+  } finally {
+    scheduleNextSync();
+  }
 }
 
 function scheduleNextSync() {
