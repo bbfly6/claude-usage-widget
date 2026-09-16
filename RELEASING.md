@@ -61,6 +61,36 @@ npm run build:win
 
 `dist/` 에 exe · exe.blockmap · **latest.yml** 이 생긴다. latest.yml 이 없으면 중단.
 
+### 백신이 빌드를 막는 경우
+
+```
+⨯ EPERM: operation not permitted, rename 'dist\win-unpacked.tmp' -> 'dist\win-unpacked'
+```
+
+electron-builder 가 Electron 을 임시 폴더에 푼 뒤 이름을 바꾸는 단계에서 막힌 것이다.
+갓 풀린 파일을 실시간 검사가 잡고 있어서 생긴다(260916, ESET 추정 — 세 번 연속 실패,
+30분 뒤 빈 `dist` 에서도 같음). 저장소 폴더를 백신 예외에 넣는 것이 근본 대처다.
+
+급하면 이미 풀려 있는 Electron 폴더를 가리켜 우회한다. 코드·설정은 그대로고
+런타임을 어디서 가져올지만 바뀐다.
+
+```
+npm run build:win -- --config.electronDist=<풀어둔 Electron 폴더>
+```
+
+우회했으면 **포장된 코드가 커밋한 소스와 같은지 반드시 확인한다.**
+
+```
+npx asar extract-file "dist\win-unpacked\resources\app.asar" src/renderer.js
+certutil -hashfile renderer.js SHA256
+certutil -hashfile src\renderer.js SHA256     # 두 값이 같아야 한다
+del renderer.js
+```
+
+맥에서 잰 해시와는 **다르게 나온다** — 윈도우 git 이 체크아웃할 때 줄바꿈을 CRLF 로
+바꾸기 때문이다(260916 실측). 비교는 반드시 같은 기계 안에서 한다.
+한글이 든 검색어를 `findstr` 에 그대로 넘기면 코드페이지 949 라 안 걸린다.
+
 ### exe 는 하이픈 이름으로 바꿔 올린다
 
 electron-builder 는 **파일은 공백 이름**으로 만들면서 **`latest.yml` 에는 하이픈 이름**을 적는다.
