@@ -13,6 +13,14 @@ const { spawn } = require('child_process');
 // 이 앱은 자기 자신의 127.0.0.1 페이지만 로드하므로 외부 콘텐츠 노출면이 없다.
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 
+// 출력 통로가 닫혀도 앱이 죽지 않게 한다.
+// 위젯을 stdout 파이프로 띄운 부모(셸)가 먼저 끝나면, 이후 모든 쓰기가 EPIPE 로 실패한다.
+// Node 의 console 은 첫 실패만 삼키고 두 번째부터는 uncaught 로 던진다 — 몇 시간 뒤
+// 업데이트 확인 로그(AppUpdater.js:405)에서 "EPIPE: broken pipe" 오류창이 떴다 (260917 실측).
+// 리스너가 하나라도 있으면 오류가 여기로 온다. 시작 메뉴 실행은 파이프가 없어 원래 무관.
+process.stdout.on('error', () => {});
+process.stderr.on('error', () => {});
+
 // 두 번째 인스턴스 차단: 단축아이콘 두 번 눌러도 EADDRINUSE 안 나고 첫 창에 포커스만
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
