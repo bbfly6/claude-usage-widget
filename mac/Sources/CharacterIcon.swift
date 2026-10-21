@@ -37,6 +37,8 @@ final class CharacterIcon {
 
     private let web: WKWebView
     private let host: NSWindow
+    /// 호스트 창을 세워두는 화면 밖 좌표.
+    private static let parkOrigin = NSPoint(x: -10000, y: -10000)
     private let css: String
     private let body: String
     /// 부활 연출용 날개. 원본 캐릭터에는 없는 맥 전용 요소라 여기서 만들어 끼운다.
@@ -128,14 +130,27 @@ final class CharacterIcon {
                         configuration: WKWebViewConfiguration())
         web.setValue(false, forKey: "drawsBackground")
         // WKWebView 는 창에 붙어 있지 않으면 합성을 하지 않아 스냅샷이 백지로 나온다 (260903 실측).
-        host = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: boxW, height: boxH),
+        host = NSWindow(contentRect: NSRect(origin: CharacterIcon.parkOrigin,
+                                            size: NSSize(width: boxW, height: boxH)),
                         styleMask: [.borderless], backing: .buffered, defer: false)
         host.isOpaque = false
         host.backgroundColor = .clear
         host.hasShadow = false
         host.ignoresMouseEvents = true
+        // 화면 밖 좌표만으로는 안 숨는다. 디스플레이 구성이 바뀌면 macOS 가 화면 밖 창을
+        // 주 화면 안으로 끌어다 놓는다 (261021 실측: 12일 켜둔 앱에서 이 창이 (80,96) 에
+        // 나타나 바탕화면 위젯을 가렸다. ignoresMouseEvents 라 클릭도 통과해버린다).
+        // alpha 0 이어도 스냅샷은 그대로 나온다 (261021 실측: 불투명 픽셀 수 alpha 1 과 동일).
+        host.alphaValue = 0
         host.contentView = web
         host.orderFront(nil)
+        // alpha 0 에 기대지만 말고, 끌려 나온 창은 화면 밖으로 되돌린다.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main
+        ) { [weak host] _ in
+            MainActor.assumeIsolated { host?.setFrameOrigin(CharacterIcon.parkOrigin) }
+        }
     }
 
     /// index.html 의 <div class="char-body"> 블록을 통째로 꺼낸다.
